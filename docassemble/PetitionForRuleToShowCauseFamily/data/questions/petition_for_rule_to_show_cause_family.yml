@@ -1,0 +1,1362 @@
+metadata:
+  title: Petition for Rule to Show Cause - Family Law
+  short title: Petition to Show Cause
+  comment: This program helps you make forms to help enforce an earlier court order from a family law case.
+  authors:
+    - Vivian McNaughton
+---
+objects:
+  - users: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
+  - other_parties: ALPeopleList.using(complete_attribute=['complete'])
+  - child: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True)
+  - child_with_age: ALPeopleList.using(complete_attribute=['complete'] )
+  - order_paragraph: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True)
+  - other_parties[0].jail_delivery_address: ALAddress
+---
+include:
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ILAO:ilao-interview-framework.yml
+  - docassemble.ILAO:shared-basic-questions.yml
+---
+code: |
+  ilao_easy_form_title = "Petition for Rule to Show Cause - Family Law"
+  ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/127486"
+  github_user = 'IllinoisLegalAidOnline'
+  github_repo_name = 'docassemble-PetitionForRuleToShowCauseFamily'
+  allowed_courts = ['Circuit']
+  user_ask_role = 'defendant'
+  al_form_type = 'existing_case'
+  form_name = "Petition for Rule to Show Cause"
+---
+# Road map
+sections:
+  - section_intro: Start
+  - section_case_info: Case info
+  - section_other_party: Other party
+  - section_petition: Your petition
+  - section_delivery: Delivery and filing details
+  - section_user: About you
+  - section_download: Download  
+---
+# interview order block
+mandatory: True
+code: |
+  nav.set_section('section_intro')
+  sees_nav_bar
+  snapshot_start
+  how_to_use
+  about_petition
+  set_progress(5)
+
+  nav.set_section('section_case_info')
+  if in_re_check:
+    in_re_label
+  if child_support_violation:
+    about_child_support
+  else:
+    case_type
+  party_label
+  trial_court_index
+  case_number
+  filing_date
+  case_completed
+
+  nav.set_section('section_other_party')
+  other_parties[0].name.first
+  if other_parties[0].is_represented:
+    other_parties[0].lawyer.name.first
+  other_parties[0].address.address
+
+  nav.set_section('section_petition')
+  petition_info
+  if child_support_violation:
+    child.gather()
+    child_support_order_date
+    child_support_amount
+    child_support_last_payment_date
+    child_support_missed_payment_count
+    child_support_arrears_check
+    child_support_total_amount_note
+  elif case_type == "maintenance":
+    maintenance_order_date
+    maintenance_amount
+    maintenance_last_payment_date
+    maintenance_missed_payment_count
+    maintenance_arrears_check
+    maintenance_total_amount_note
+  else:
+    order_paragraph.gather()
+  willful_info
+
+  nav.set_section('section_delivery')
+  if other_parties[0].knows_delivery_method:
+    other_parties[0].mail_delivery
+    other_parties[0].delivery_date
+  hand_delivery_info 
+
+  nav.set_section('section_user')
+  users[0].name.first
+  users[0].address.address
+  users[0].has_email_address
+  e_signature
+
+  nav.set_section('section_download')
+  forms_assembling
+  statute
+  if child_support_violation:
+    child_age_list
+  get_docs_screen
+
+---
+# order paragraph gather block
+code: |
+  order_paragraph[i].number
+  order_paragraph[i].violation
+  order_paragraph[i].order_request
+  order_paragraph[i].complete = True
+---
+#child gather code block
+code: |
+  child[i].name.first
+  child[i].birth
+  child[i].complete = True
+---
+reconsider: True
+code: |
+  for index, kid in enumerate(child):
+    child_with_age[index].name.first = kid.name_full()
+    child_with_age[index].name.last = "(age "
+    child_with_age[index].name.last += str(int(kid.age.years))
+    child_with_age[index].name.last += ")"
+    child_with_age[index].complete = True
+  child_with_age.there_is_another = False
+  child_age_list = True
+---
+code: |
+  stuff_to_snapshot = {
+          'start_time': str(current_datetime().format_datetime()),
+          'started_interview': True, 
+          }
+  
+  try:
+    stuff_to_snapshot['ip_address'] = device(ip=True)
+  except:
+    pass
+  
+  stuff_to_snapshot['user_zip'] = showifdef('users[0].address.zip')
+
+  stuff_to_snapshot['downloaded_forms'] = showifdef('forms_assembling')
+  
+  stuff_to_snapshot['case_type'] = showifdef('case_type')
+
+  stuff_to_snapshot['child_support_violation'] = showifdef('child_support_violation')
+  
+  store_variables_snapshot(
+          data=stuff_to_snapshot, persistent=True
+          )
+  snapshot_interview_state = True
+---
+code: |
+  snapshot_interview_state
+  snapshot_start = True  
+---
+code: |
+  reconsider('snapshot_interview_state')
+  snapshot_forms = True
+---
+id: welcome
+question: |
+  Petition for rule to show cause - Family law
+subquestion: |
+  Welcome to Illinois Legal Aid Online's **Petition for rule to show cause - Family law** Easy Form.
+
+  This program makes the forms to enforce an earlier court order in family or domestic relations court.
+  
+  The forms can only be used in Illinois.
+field: sees_nav_bar
+---
+id: how to use
+continue button field: how_to_use
+question: |
+  Instructions
+subquestion: |
+  To complete this program, you will need:
+
+  * A copy of the court order you want enforced,
+  * Information about how the other person in the case did not follow the order, and
+  * The address of the other person in your case.
+
+  Set aside 10 to 20 minutes to finish this program. You can log in and save your work to continue later. 
+  
+  ${ collapse_template(help_example) }  
+
+  Click on **{green words}** to learn what they mean. Some questions have a question mark in a circle ${ fa_icon("question-circle", color_css="#0dcaf0" ) } that also gives help.
+---
+template: help_example
+
+subject: |
+
+  **You can click sections like this to show more information.**
+
+content: |  
+
+  This is an example of help. Click again to hide.
+---
+id: petition for rule intro
+continue button field: about_petition
+question: |
+  About enforcing court orders
+subquestion: |
+  When someone does not follow a court order from a family law case you were in, you have a few options:
+
+  * You can go into **{mediation}**. If you are in Cook County, you may be able to use the Circuit Court's [**Family Court Services Mediation**](https://www.cookcountycourtil.gov/department/family-court-services/mediation).
+  * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
+  * If you need help collecting child support, you can ask the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents/apply.html) for help.
+terms:
+  - "contempt of court": |
+      When someone violates a court order or disrespects the court, they are in **contempt of court**.
+  - "mediation": |
+      When a neutral person, called a mediator, works to help the parties in a case reach an agreement. Mediation is not a court case.
+---
+id: case type
+question: |
+  What type of case was the order from?
+subquestion: |
+  You can find this on the top of the first page of your court order. It should say something like, "In Re: The Marriage of:" or "In Re: The Parentage of:"
+fields:
+  - Case type: case_type
+    input type: radio
+    choices:
+      - Dissolution of Marriage
+      - Dissolution of Civil Union
+      - Legal Separation
+      - Declaration of Invalidity
+      - Allocation of Parental Responsiblities
+      - Maintenance
+      - Visitation (Non-Parent)
+      - Support
+      - Parentage
+      - Order of Protection
+---
+id: in re check
+question: |
+ Does the court case have the words "**In re:**" in the name?
+subquestion: |
+  Look at the name of the case at the top of the court papers. "In re" is often used in probate, guardianship, and some family law cases. For example, a probate case regarding Jane Doe's estate might be called "In re: Estate of Jane Doe."
+  
+  **Note:** If the court papers say "In re:" but also list the names of people in the case, you can select **No**. For example, if the case title is "In re: Marriage of Julia Smith and Tony Smith," the names you already entered will be put on your forms. 
+fields:
+  - no label: in_re_check
+    datatype: yesnoradio
+---
+id: in re label
+question: |
+  What does it say after "**In re:**" on the court papers?
+subquestion: |
+  For example, the case could be called "In re: The Will of Elena Black."
+fields:
+  - In re:: in_re_label
+    maxlength: 50
+---
+id: child support violation
+question: |
+  Did the other party fail to pay child support, according to a court order?
+field: child_support_violation
+choices:
+  - Yes, child support is overdue.: True
+  - No, there is another violation.: False
+---
+id: about child support
+continue button field: about_child_support
+question: |
+  About child support cases
+subquestion: |
+  Before making a petition to ask the court to enforce a child support order, you may want to contact the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents.html). HFS may be able to help you get your child support payments.
+
+  This program can make a petition to ask the court for to enforce a child support order, but filing a petition on your own can be harder than getting help from HFS.
+
+  If there are visitation issues or the children are living with someone other than you, it may affect child support payments. You may want to ask a lawyer for advice. Use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help) to find free or low-cost legal services in your area.
+---
+id: party label
+question: |
+  What was your role in the case?
+subquestion: |
+  ${ collapse_template(which_party) }  
+field: party_label
+choices:
+  - Plaintiff: plaintiff
+  - Petitioner: petitioner
+  - Defendant: defendant
+  - Respondent: respondent
+validation code: |
+  if party_label == "plaintiff":
+    opponent_label = "defendant"
+  elif party_label == "petitioner":
+    opponent_label = "respondent"
+  elif party_label == "defendant":
+    opponent_label = "plaintiff"
+  elif party_label == "respondent":
+    opponent_label = "petitioner"
+---
+template: which_party
+subject: |
+  **Learn more about roles and party labels**
+content: |
+  If you filed the original case, you are either the Plaintiff or the Petitioner.
+
+  If someone filed the original case against you, you are either the Defendant or the Respondent.
+
+  The other court forms in the case should help you figure it out. Look at the top (the caption) of the Petition, Complaint, or Order. That form should have a label by your name.
+---
+id: county
+continue button field: county
+question: |
+  In which county was the case filed?
+subquestion: |
+  The county should be listed near the top of the court papers.
+fields:
+  - County: trial_court_index
+    datatype: integer
+    code: |
+      court_county_lookup()
+---
+id: Cook County district
+question: |
+  In which Cook County courthouse was the court case filed?
+subquestion: |
+  ${ collapse_template(cook_district_help) }  
+field: cook_district
+choices:
+  - First Municipal District, Daley Center, 50 W. Washington Street, Chicago: 15
+  - Second Municipal District, 5600 Old Orchard Road, Skokie: 16
+  - Third Municipal District, 2121 Euclid Avenue, Rolling Meadows: 17
+  - Fourth Municipal District, 1500 Maybrook Drive, Maywood: 18
+  - Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview: 19
+  - Sixth Municipal District, 16501 South Kedzie Parkway, Markham: 20
+---
+template: cook_district_help
+subject: |
+  **What if I am not sure?**
+content: |  
+  Visit **[Illinois Court Help](https://www.ilcourthelp.gov/)**, or you can call or text (833) 411-1121 for assistance.
+---
+code: |
+  def court_county_lookup(lowercase=False):
+    all_court_counties = court_list._load_courts()['address_county'].items()
+    filtered_courts = [(-1, "cook")] if lowercase else [(-1, "Cook")]
+    for court in all_court_counties:
+      if court[1] != "Cook":
+        court_name = court[1].lower() if lowercase else court[1]
+        filtered_courts.append((court[0],court_name))
+    return sorted( filtered_courts, key=lambda y: y[1])
+---
+depends on:
+  - trial_court_index
+  - cook_district
+code: |
+  if trial_court_index == -1:
+    trial_court = court_list.as_court('trial_court', cook_district)
+  else:
+    trial_court = court_list.as_court('trial_court', trial_court_index)
+    
+  court_name = str(trial_court.name)
+  court_street_address = str(trial_court.address.address)
+  court_full_street = str(trial_court.address.line_one(bare=True))
+  court_city = str(trial_court.address.city)
+  court_state = str(trial_court.address.state)
+  court_zip = str(trial_court.address.zip)
+  court_csz = str(trial_court.address.line_two())
+  courthouse_info = court_name + ", " + court_street_address + ", " + court_city + ", " + court_state + " " + court_zip
+---
+template: county_lookup_help
+subject: |
+  **How do I look up the county?**
+content: |  
+  You can use this [**City-to-County Finder**](https://www.statsamerica.org/CityCountyFinder/) to find the county.
+---
+id: case number
+question: |
+  What is the case number?
+subquestion: |
+  The case number is in the caption near the top of the first page of the court order.
+
+  Some orders may also have a Calendar number or an IV-D case number. If the court order from your case has those numbers, add those as well.
+fields:
+  - Case number: case_number
+  - Calendar: calendar
+    required: False
+  - IV-D case number: ivd_number
+    required: False
+---
+id: filing date
+question: |
+  When was the ${case_type} case filed with the court?
+fields:
+  - Filing date: filing_date
+    datatype: ThreePartsDate
+    alMax: ${ today().format("yyyy-MM-dd") }
+---
+id: case completed
+question: |
+  Has the ${case_type} case been completed?
+subquestion: |
+  If the court entered a final *Order* or *Judgment*, your case is completed.
+
+  If the court has not entered such an order, your case is "pending." You likely have another court date scheduled.
+fields: 
+  - no label: case_completed
+    input type: radio
+    choices: 
+      - Yes, it is complete.: True
+      - No, it is still pending.: False
+  - Date of the final order or judgment: final_order_date
+    datatype: ThreePartsDate
+    alMax: ${ today().format("yyyy-MM-dd") }
+    show if: case_completed
+    help: |
+      The order or judgment should be dated by the judge or stamped by the court clerk. This might be on the first page or on the last page near the judge's signature.
+---
+sets:
+  - other_parties[i].name.first
+  - other_parties[i].name.last
+  - other_parties[i].name.middle
+  - other_parties[i].name.suffix
+id: other party name
+question: |
+  What is the name of the other party in the ${case_type} case?
+subquestion: |
+  Their name should be on the top of the order or judgment.
+fields:
+  - code: |
+      other_parties[i].name_fields()
+---
+generic object: ALIndividual
+id: has lawyer
+question: |
+  Does ${ x.name_full() } have a lawyer in this case?
+field: x.is_represented
+choices:
+  - Yes: True
+  - No: False
+  - I don't know.: null 
+# note: null will be None in review screen
+---
+id: add lawyer
+generic object: ALIndividual
+question: |
+  Who is  ${ x.name_full() }'s lawyer?
+fields:
+  - First name: x.lawyer.name.first
+  - Middle name: x.lawyer.name.middle
+    required: False
+  - Last name: x.lawyer.name.last
+  - Suffix: x.lawyer.name.suffix
+    code: |
+      name_suffix()
+    required: False   
+---
+id: other party address
+question: |
+  % if other_parties[0].is_represented:
+  What is ${other_parties[0].lawyer.name_full()}'s address?
+  % else:
+  What is ${other_parties[0].name_full()}'s address?
+  % endif
+fields:
+  - Street address: other_parties[0].address.address
+    address autocomplete: True
+  - Address line 2: other_parties[0].address.unit
+    required: False
+  - City: other_parties[0].address.city
+  - State: other_parties[0].address.state
+    code: |
+      states_list() 
+  - ZIP code: other_parties[0].address.zip
+---
+id: other party email
+question: |
+  Does ${other_parties[0].name_full()} have an email address?
+fields:
+  - no label: other_parties[0].has_email
+    datatype: yesnomaybe
+  - What is their email address?: other_parties[0].email_address
+    show if: other_parties[0].has_email
+---
+id: petition info
+continue button field: petition_info
+question: |
+  About the petition
+subquestion: |
+  Your *Petition for Rule to Show Cause* form will include information about your case.
+
+  If you are asking the court to enforce a child support or maintenance order, your form will say how much and how often you are supposed to be paid and how much ${other_parties[0].name_full()} owes you. It will also list the names and birthdates of any children.
+
+  Otherwise, your form will say how ${other_parties[0].name_full()} violated each paragraph of the court order and what you are asking the court to tell ${other_parties[0].name_full()} to do.
+---
+sets:
+  - child[i].name.first
+id: child name
+question: |
+  What is the name of the ${ordinal(i)} child in the support order?
+fields:
+  code:
+    child[i].name_fields()
+---
+id: child birth
+question: |
+  When was ${child[i].name_full()} born?
+fields:
+  - Birthdate: child[i].birth
+    datatype: ThreePartsDate
+    alMax: ${ today().format("yyyy-MM-dd") }
+validation code: |
+  child[i].age = date_difference(starting=child[i].birth, ending=today())
+---
+id: child there is another
+question: |
+  Is there another child included in the child support order?
+subquestion: |
+  So far you have told us about ${child.full_names()}.
+fields:
+  - no label: child.there_is_another
+    datatype: yesnoradio
+---
+id: children live with who
+question: |
+  % if child.number_gathered() > 1:
+  Who do the children live with?
+  % else:
+  Who does ${child[0].name_full()} live with?
+  % endif
+fields:
+  - no label: live_with_who
+    input type: radio
+    choices:
+      - Me
+      - ${other_parties[0].name_full()}: other
+---
+id: live with date
+question: |
+  % if child.number_gathered() > 1 and live_with_who == "Me":
+  When did the children start living with you?
+  % elif child.number_gathered() > 1 and live_with_who == "other":
+  When did the children start living with ${other_parties[0].name_full()}?
+  % elif child.number_gathered() == 1 and live_with_who == "Me":
+  When did ${child[0].name_full()} start living with you?
+  % elif child.number_gathered() == 1 and live_with_who == "other":
+  When did ${child[0].name_full()} start living with ${other_parties[0].name_full()}?
+  % endif
+fields:
+  - Date: live_with_date
+    datatype: ThreePartsDate
+    max: ${ today() }
+---
+id: child support order date
+question: |
+  When did the court order child support payments?
+subquestion: |
+  This date should be on the order.
+fields:
+  - Date: child_support_order_date
+    datatype: ThreePartsDate
+---
+id: maintenance order date
+question: |
+  When did the court order maintenance payments?
+subquestion: |
+  This date should be on the order.
+fields:
+  - Date: maintenance_order_date
+    datatype: ThreePartsDate
+---
+id: child support amount
+question: |
+  How much and how often is ${other_parties[0].name_full()} supposed to pay child support?
+fields:
+  - Amount: child_support_amount
+    datatype: currency
+  - Frequency: child_support_freq
+    input type: radio
+    choices:
+      - Every week
+      - Every other week
+      - Twice a month
+      - Once a month
+---
+id: maintenance amount
+question: |
+  How much and how often is ${other_parties[0].name_full()} supposed to pay maintenance?
+fields:
+  - Amount: maintenance_amount
+    datatype: currency
+  - Frequency: maintenance_freq
+    input type: radio
+    choices:
+      - Every week
+      - Every other week
+      - Twice a month
+      - Once a month
+---
+id: child support last payment date
+question: |
+  When did ${other_parties[0].name_full()} last pay child support?
+fields:
+  - Date: child_support_last_payment_date
+    datatype: ThreePartsDate
+---
+id: maintenance last payment date
+question: |
+  When did ${other_parties[0].name_full()} last pay maintenance?
+fields:
+  - Date: maintenance_last_payment_date
+    datatype: ThreePartsDate
+---
+id: child support missed payment count
+question: |
+  How many payments has ${other_parties[0].name_full()} missed?
+fields:
+  - Number of missed payments: child_support_missed_payment_count
+    datatype: integer
+---
+id: maintenance missed payment count
+question: |
+  How many payments has ${other_parties[0].name_full()} missed?
+fields:
+  - Number of missed payments: maintenance_missed_payment_count
+    datatype: integer
+---
+id: child support arrears
+question: |
+  Was ${other_parties[0].name_full()} ordered to pay a separate amount of past unpaid child support?
+subquestion: |
+  This past unpaid child support is sometimes called an "arrearage." It would be listed as a separate amount on the support order.
+
+  If past unpaid child support is owed, enter that amount.
+
+  If ${other_parties[0].name_full()} has only missed regular payments, you can click **No**.
+fields:
+  - no label: child_support_arrears_check
+    datatype: yesnoradio
+  - Past unpaid child support: child_support_arrears_amount
+    show if: child_support_arrears_check
+    datatype: currency
+---
+id: maintenance arrears
+question: |
+  Was ${other_parties[0].name_full()} ordered to pay a separate amount of past unpaid maintenance?
+subquestion: |
+  This past unpaid maintenance is sometimes called an "arrearage." It would be listed as a separate amount on the support order.
+
+  If past unpaid maintenance is owed, enter that amount.
+
+  If ${other_parties[0].name_full()} has only missed regular payments, you can click **No**.
+fields:
+  - no label: maintenance_arrears_check
+    datatype: yesnoradio
+  - Past unpaid child support: maintenance_arrears_amount
+    datatype: currency
+---
+reconsider: True
+code: |
+  child_support_total_amount = (child_support_amount * child_support_missed_payment_count)
+  if child_support_arrears_check:
+    child_support_total_amount += child_support_arrears_amount
+---
+id: child support total amount
+continue button field: child_support_total_amount_note
+question: |
+   Based on your answers, ${other_parties[0].name_full()} owes ${currency(child_support_total_amount)} in child support payments.
+subquestion: |
+  If this is correct, click **Next**. If this is incorrect, you can click **Your petition** to change your earlier answers.
+---
+reconsider: True
+code: |
+  maintenance_total_amount = (maintenance_amount * maintenance_missed_payment_count)
+  if maintenance_arrears_check:
+   maintenance_total_amount += maintenance_arrears_amount
+---
+id: maintenance total amount
+continue button field: maintenance_total_amount_note
+question: |
+   Based on your answers, ${other_parties[0].name_full()} owes ${maintenance_total_amount} in maintenance payments.
+subquestion: |
+  If this is correct, click **Continue**. If this is incorrect, you can click **Your petition** to change your earlier answers.
+---
+id: order paragraph
+question: |
+  What does the order or judgment say ${other_parties[0].name_full()} is supposed to do?
+subquestion: |
+  Enter the paragraph number of the Order that was violated.
+
+  Copy the words from that paragraph into the Order Requirement box below. For example, you could copy part of the Order that states, "put the marital real estate on the market."
+fields:
+  - Order paragraph (number or letter): order_paragraph[i].number
+    maxlength: 3
+  - Order requirement: order_paragraph[i].requirement
+    input type: area
+    maxlength: 120
+---
+id: violation
+question: |
+  How did ${other_parties[0].name_full()} violate paragraph ${order_paragraph[i].number} of the order or judgment?
+subquestion: |
+  Be specific. State what ${other_parties[0].name_full()}did to violate the order or judgment. Include the amount of money, if any, claimed to be due. Include the date or dates when they violated the order or judgment. 
+
+  If ${other_parties[0].name_full()}'s violation cost you money or hurt you in another way, include that here.
+ 
+  ${collapse_template(order_paragraph[i].reference)}
+fields:
+  - Violation: order_paragraph[i].violation
+    input type: area
+    maxlength: 150
+---
+template: order_paragraph[i].reference
+subject: |
+  **Remind me what paragraph ${order_paragraph[i].number} said**
+content: |
+  ${order_paragraph[i].requirement}
+---
+id: order request
+question: |
+  What do you want the court to order ${other_parties[0].name_full()} to do?
+subquestion: |
+  ${collapse_template(order_paragraph[i].reference)}
+fields:
+  - The court should order them to: order_paragraph[i].order
+    input type: area
+    maxlength: 100
+---
+id: willful info
+continue button field: willful_info
+question: |
+  About your petition
+subquestion: |
+  Your petition will say that ${other_parties[0].name_full()}'s vilation of the order was "willful, contumacious, and without just cause."
+ 
+  **Willful** means they did it on purpose.
+
+  **Contumacious** means they refused to obey the court.
+
+  **Without just cause** means they did not have a good reason to do it
+---
+id: knows delivery method
+generic object: ALIndividual
+question: |
+  % if x.is_represented:
+  Do you know **how** and **when** you will send your forms to ${ x.lawyer.name_full() }?
+  % else:
+  Do you know **how** and **when** you will send your forms to ${ x.name_full() }?
+  % endif
+subquestion: |
+  ${ collapse_template(delivery_method_help) }  
+
+  For best results, complete the Proof of Delivery section and send the forms today.
+
+  If you do not know this now, you can add it to the Proof of Delivery section of your forms later.
+field: x.knows_delivery_method
+choices:
+  - Yes: True
+  - No. I do not know this now. I will add it to my forms later.: False
+---
+template: delivery_method_help
+subject: |
+  **What are my delivery options?**
+content: |  
+  You can deliver the forms by:
+  
+  * Email,
+  * The court's **{e-filing system}**,
+  * US mail or a delivery company (like UPS or FedEx), or
+  * Hand delivery to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.
+
+  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand-delivery.
+  
+  If you are in a prison or jail, you can deliver by mail.
+terms:
+  - e-filing system: |
+      The court's e-filing system could be any approved electronic filing service provider (EFSP).
+---
+id: all party delivery method
+sets:
+  - x.email_delivery
+  - x.efm_delivery
+  - x.physical_delivery
+generic object: ALIndividual
+question: |
+  % if x.is_represented:
+  How will you send your forms to ${ x.lawyer.name_full() }?
+  % else:
+  How will you send your forms to ${ x.name_full() }?
+  % endif
+subquestion: |
+  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand-delivery.
+
+  For best results, complete the Proof of Delivery section and send the forms today.
+
+  **Note:** If you do not know this now, be sure to add it to the Proof of Delivery section of your forms later.
+
+  ${ collapse_template(efiling_help) }  
+fields:
+  - Email: x.email_delivery
+    datatype: yesnowide
+  - Email address (for direct email delivery): x.delivery_email
+    datatype: email
+    js show if: 
+      val("x.email_delivery") == true
+    required: False
+  - E-filing system: x.efm_delivery
+    datatype: yesnowide
+    help: |
+      The court's e-filing system could be any approved electronic filing service provider (EFSP).
+  - Email address (for delivery thru the e-filing system): x.delivery_efsp_email
+    datatype: email
+    js show if: 
+      val("x.efm_delivery") == true
+    required: False
+  - "US mail, a delivery company (like UPS or FedEX), or in-person by hand-delivery": x.physical_delivery
+    datatype: yesnowide
+  - note: |
+      Where will you deliver the paper forms to?
+    js show if: 
+      val("x.physical_delivery") == true
+  - Street address: x.address.address
+    address autocomplete: True
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - Address line 2: x.address.unit
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - City: x.address.city
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - State: x.address.state
+    code: |
+      states_list()
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - ZIP code: x.address.zip
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - note: |
+      How will you deliver the paper forms? **Choose an option below.**  
+    js show if: 
+      val("x.physical_delivery") == true
+  - I will send by **US mail or a delivery company** (like UPS or FedEx).: x.mail_delivery
+    datatype: yesnowide
+    js show if:
+      val("x.physical_delivery") == true
+    required: False
+  - Address or intersection of mailbox or delivery company: x.delivery_mail_address
+    maxlength: 40
+    js show if: 
+      val("x.physical_delivery") == true && val("x.mail_delivery") == true
+    required: False
+  - City of mailbox or delivery company: x.delivery_mail_city
+    maxlength: 30
+    js show if: 
+      val("x.physical_delivery") == true && val("x.mail_delivery") == true
+    required: False
+  - State of mailbox or delivery company: x.delivery_mail_state
+    code: |
+      states_list()
+    js show if: 
+      val("x.physical_delivery") == true && val("x.mail_delivery") == true
+    required: False
+  - "I will **hand-deliver** paper forms. **Note:** You can only deliver to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.": x.hand_delivery
+    datatype: yesnowide
+    js show if: 
+      val("x.physical_delivery") == true      
+    required: False
+  - I will send the forms by mail from a **prison or jail**.: x.jail_delivery
+    datatype: yesnowide
+    js show if: 
+      val("x.physical_delivery") == true
+    required: False
+  - note: |
+      Enter prison or jail information
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+  - Name of prison or jail: x.delivery_jail_name
+    maxlength: 40
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - Street address: x.jail_delivery_address.address
+    address autocomplete: True
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - Address line 2: x.jail_delivery_address.unit
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - City: x.jail_delivery_address.city
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - State: x.jail_delivery_address.state
+    code: |
+      states_list()
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+  - ZIP code: x.jail_delivery_address.zip
+    js show if: 
+      val("x.physical_delivery") == true && val("x.jail_delivery") == true
+    required: False
+---
+template: efiling_help
+subject: |
+  **What if I need help sending my forms electronically?**
+content: |  
+  If you need help delivering by email or using the e-filing system, you can visit a [**Legal Self-Help Center**](https://www.illinoislegalaid.org/get-legal-help/lshc-directory) or you can call, chat, or text a Court Guide at [**Illinois Court Help**](https://www.ilcourthelp.gov) or 833-411-1121.
+---
+---
+id: delivery time
+generic object: ALIndividual
+question: |
+  % if x.is_represented:
+  When will you send your forms to ${ x.lawyer.name_full() }?
+  % else:
+  When will you send your forms to ${ x.name_full() }?
+  % endif
+subquestion: |
+  For best results, complete the Proof of Delivery section and send the forms today.
+
+  **Note:** If you do not know this now, be sure to add it to your forms later.
+fields:
+  - Date: x.delivery_date
+    datatype: date
+    required: False
+    min: ${ today().minus(years=1) }
+    max: ${ today().plus(years=1) }
+  - Time: x.delivery_time
+    datatype: time
+    required: False
+validation code: |
+  if (not showifdef('x.delivery_date')):
+    x.knows_delivery_date = False
+  else:
+    x.knows_delivery_date = True
+  if (not showifdef('x.delivery_time')):
+    x.knows_delivery_time = False
+  else:
+    x.knows_delivery_time = True
+---
+id: hand delivery info
+continue button field: hand_delivery_info
+question: |
+  Complete the delivery section of your forms
+subquestion: |
+  **Don't forget!** Make sure you review and complete the delivery section of your forms for each party.
+  
+  [FILE proof_of_delivery_snip_sep_2025.png, 100%, Proof of Delivery section of forms]
+
+  **Instructions when delivering your forms by hand:**
+
+  * If a party in your case does not have a lawyer, you can hand-deliver the forms to them or to a family member who is 13 or older at their home.
+  * If they do have a lawyer, you can hand-deliver the forms to the lawyer or to the lawyer's office.
+---
+sets:
+  - users[0].name.first
+id: user zero name
+question: |
+  What is your name?
+fields:
+  - code: |
+      users[0].name_fields()
+---
+id: user address
+question: |
+  What is your address?
+fields:
+  - Street address: users[0].address.address
+    address autocomplete: True
+  - Address line 2: users[0].address.unit
+    required: False
+  - City: users[0].address.city
+  - State: users[0].address.state
+    code: |
+      states_list()
+    default: IL      
+  - ZIP code: users[0].address.zip
+---
+id: your contact information
+generic object: ALIndividual
+question: |
+  What is your contact information?
+subquestion: |
+  The court or other parties might need to contact you about this case.
+
+  **This information will appear on your court forms.**
+  
+  If you do not want to list a phone number on your forms, leave it blank.
+
+  If you have an email address, you must list it. Be sure to check your email daily, otherwise you may miss important information about your case.
+
+  ${ collapse_template(contact_info_help) }  
+fields:  
+  - Phone number: x.phone_number
+    datatype: al_international_phone
+    required: False
+  - label: |
+      Do you have an email address?
+    field: x.has_email_address      
+    datatype: yesnoradio
+  - note: |
+      This email address will appear on your court forms. Be sure to check 
+      this email daily, otherwise you may miss important information about 
+      your case.
+    show if: x.has_email_address      
+  - Email address: x.email    
+    datatype: email
+    show if: 
+      variable: x.has_email_address
+      is: True
+---
+template: contact_info_help
+subject: |
+  **What if I don't want to list my email address?**
+content: |  
+  If you do not want to enter your personal email address, you can create a new email account to get email about your case.
+  
+  To make a new email account try one of these email services:
+  
+  * [**Gmail**](https://accounts.google.com/SignUp)
+  * [**Outlook**](https://outlook.live.com/owa/?nlp=1&signup=1)
+  * [**Yahoo**](https://login.yahoo.com/account/create?.lang=en-US&.intl=us)
+---
+id: e-signature
+question: |
+  Do you want to add your e-signature to your *Petition for Rule to Show Cause*?
+subquestion: |
+  This program can put “**/s/ ${users[0].name_full()}**” where you would sign your name. The court will accept this as your signature.
+
+  If you do not add your **{e-signature}**, you must sign your paper forms before you file and deliver them.
+
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">What it means to sign your forms</h6>
+    <p>By signing your <i>Petition for Rule to Show Cause</i>, you are certifying that:</p>
+    <p><ul>
+      <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
+      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
+    </ul></p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+  </div>
+
+fields:
+  - "Add e-signature?": e_signature
+    datatype: yesnoradio
+terms:
+  - "e-signature": |
+      An e-signature is an electronic signature. It is a digital version of a signature that has the same effect as a hand-written signature.
+---
+id: forms assembling
+continue button field: forms_assembling
+question: |
+  Almost done
+subquestion: |
+  After you click **Next**, it may take a few moments to finish making your forms.
+  
+  ###### You do not need to refresh your screen. Hang in there!
+  
+  [NEWLINE]
+---
+reconsider: True
+code: |
+  if child_support_violation or case_type == "maintenance":
+    statute = "750 ILCS 46/801"
+  else:
+    statute = "750 ILCS 5/505"
+---
+id: get docs screen
+event: get_docs_screen
+question: |
+  Download
+subquestion: |
+  Your forms are ready. View and download your forms below. Click **Make changes** to fix any mistakes.
+  
+  Read the instructions to learn what to do next.
+  
+  This program does not file your forms with the court. You will need to do this yourself. Learn about [**e-filing in Illinois**](https://www.illinoiscourts.gov/eservices/information-for-filers-without-lawyers).
+  
+  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
+
+  ${ al_user_bundle.download_list_html() }
+ 
+  &nbsp;
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+  
+  **Note:** This program does not file your forms with the court. You will need to do this yourself. Learn about [**e-filing in Illinois**](https://www.illinoiscourts.gov/eservices/information-for-filers-without-lawyers).
+
+  Thank you for using ILAO Easy Forms!
+under: |
+  % if not user_logged_in():
+  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} **Sign-in**](${url_of('login', next=interview_url())}) or [**create**](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
+  % endif
+
+ 
+  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=current_context().question_id, easy_form_variable=current_context().variable, local=False,reset=1), label=':comment: Was this program helpful?', color="#181c36", size="md", new_window=True) }
+---
+generic object: ALDocumentBundle
+template: x.send_email_template
+subject: |
+  Petition for rule to show cause - Family law
+content: |
+  Your forms are attached.
+    
+  Thanks for using ILAO Easy Forms!
+  
+  [**Illinois Legal Aid Online**](https://www.illinoislegalaid.org)
+---
+objects:
+  - petition: ALDocument.using(title="Petition for Rule to Show Cause", filename="petition", enabled=True, has_addendum=False)
+  - instructions: ALDocument.using(title="Instructions", filename="instructions", enabled=True, has_addendum=False)
+  - proof_of_delivery: ALDocument.using(title="Proof of Delivery", filename="proof_of_delivery", enabled=True, has_addendum=False)
+  - notice_family: ALDocument.using(title="Notice of Court Date", filename="notice_family", enabled=True, has_addendum=False)
+  - order: ALDocument.using(title="Order on Rule to Show Cause", filename="order", enabled=True, has_addendum=False)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, petition, notice_family, proof_of_delivery, order], filename="petition_for_rule_to_show_cause.pdf", title="Download all forms")
+---
+attachment:
+  variable name: instructions[i]
+  name: instructions
+  filename: instructions
+  skip undefined: True
+  editable: False
+  pdf template file: instructions_petition_family.pdf
+  fields:
+    - "fake": ${ "" }
+---
+attachment:
+  variable name: proof_of_delivery[i]
+  name: proof_of_delivery
+  filename: proof_of_delivery
+  skip undefined: True
+  editable: False
+  pdf template file: aoic_proof_of_delivery.pdf
+  fields:
+      - "trial_court_county": ${trial_court.address.county.upper()}
+      - "plaintiffs": |
+          % if in_re_check:
+          ${ in_re_label }
+          % else:
+          % if user_ask_role == 'plaintiff':
+          % if users.number() > 1:
+          ${ users[0].name_full() }, et al.
+          % else:
+          ${ users[0].name_full() }
+          % endif
+          % else:
+          % if other_parties.number() > 1:
+          ${ other_parties[0].name_full() }, et al.
+          % else:
+          ${ other_parties[0].name_full() }
+          % endif
+          % endif
+          % endif
+      
+      - "defendants": |
+          % if in_re_check:
+          ${ "" }
+          % else:
+          % if user_ask_role == 'plaintiff':
+          ${ other_parties.full_names() } 
+          % else:
+          ${ users.full_names() }
+          % endif
+          % endif
+
+      - "user__1": ${ users[0].name_full() }
+      - "user__2": ${ users[0].name_full() }
+      - "user_mail_address_one_line__1": ${ users[0].address.on_one_line(bare=True) }
+      - "user_phone_number__1": ${ phone_number_formatted(users[0].phone_number) }
+      - "user_email": ${ users[0].email if users[0].has_email_address else '' }
+      - "case_number__1": ${ case_number }
+      - "case_number__2": ${ case_number }
+      
+      - "e_sign_name__1": ${ users[0].name_full() if e_signature else '' }
+      - "for_self": ${True}
+      - "document_name": ${"Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
+      - "delivery_party1_name_full": | 
+          % if other_parties[0].is_represented:
+          ${ other_parties[0].lawyer.name_full() } (lawyer for ${ other_parties[0].name_full() })
+          % else:
+          ${ other_parties[0].name_full() }
+          % endif
+      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) }
+      - "delivery_party1_email": ${ other_parties[0].delivery_email if other_parties[0].knows_delivery_method else '' }
+      - "delivery_party1_email_efsp": ${ other_parties[0].delivery_efsp_email if other_parties[0].knows_delivery_method else '' }
+      - "is_delivery_party1_hand_yes": ${ other_parties[0].hand_delivery if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
+      - "is_delivery_party1_mail_yes": ${ other_parties[0].mail_delivery if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
+      - "is_delivery_party1_efm_yes": ${ other_parties[0].efm_delivery if other_parties[0].knows_delivery_method else '' }
+      - "is_delivery_party1_email_yes": ${ other_parties[0].email_delivery if other_parties[0].knows_delivery_method else '' }
+      - "delivery_party1_date": ${ other_parties[0].delivery_date if other_parties[0].knows_delivery_method and other_parties[0].knows_delivery_date else '' }
+      - "delivery_party1_time": ${ format_time(other_parties[0].delivery_time, format='h:mm a') if other_parties[0].knows_delivery_method and other_parties[0].knows_delivery_time else '' }
+      
+      - "is_delivery_party1_not_electronic": ${ True if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
+      - "delivery_party1_mail_location": |
+          % if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery and other_parties[0].mail_delivery:
+          % if other_parties[0].delivery_mail_address != "" and other_parties[0].delivery_mail_city != "" and other_parties[0].delivery_mail_state != "":
+          ${other_parties[0].delivery_mail_address }, ${other_parties[0].delivery_mail_city}, ${ state_name(other_parties[0].delivery_mail_state) }
+          % elif other_parties[0].delivery_mail_address != "" and other_parties[0].delivery_mail_city != "":
+          ${other_parties[0].delivery_mail_address }, ${other_parties[0].delivery_mail_city}
+          % elif other_parties[0].delivery_mail_address != "" and other_parties[0].delivery_mail_state != "":
+          ${other_parties[0].delivery_mail_address }, ${ state_name(other_parties[0].delivery_mail_state) }
+          % elif other_parties[0].delivery_mail_city != "" and other_parties[0].delivery_mail_state != "":
+          ${other_parties[0].delivery_mail_city}, ${ state_name(other_parties[0].delivery_mail_state) }
+          % elif other_parties[0].delivery_mail_address != "":
+          ${other_parties[0].delivery_mail_address}
+          % elif other_parties[0].delivery_mail_city != "":
+          ${other_parties[0].delivery_mail_city}
+          % else:
+          ${state_name(other_parties[0].delivery_mail_state)}
+          % endif
+          % else:
+          ${ "" }
+          % endif
+      - "is_delivery_party1_jail_yes": ${ True if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery and other_parties[0].jail_delivery else '' }
+      - "delivery_party1_jail_name": |
+          % if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery and other_parties[0].jail_delivery:
+          % if other_parties[0].delivery_jail_name != "" and other_parties[0].jail_delivery_address.address != "" and other_parties[0].jail_delivery_address.city != "" and other_parties[0].jail_delivery_address.state != "":
+          ${ other_parties[0].delivery_jail_name }, ${ other_parties[0].jail_delivery_address.on_one_line(bare=True)}
+          % elif other_parties[0].delivery_jail_name == "":
+          ${ other_parties[0].jail_delivery_address.on_one_line(bare=True)}
+          % else:
+          ${ other_parties[0].delivery_jail_name }
+          % endif
+          % else:
+          ${""}
+          % endif
+
+---
+attachment:
+  variable name: notice_family[i]
+  name: notice_family
+  filename: notice_family
+  skip undefined: True
+  editable: False
+  pdf template file: notice_family.pdf
+  fields:
+    - "county_all_caps": ${trial_court.address.county.upper()}
+    - "in_re": ${case_type}
+    - "case_number": ${case_number}
+    - "calendar": ${calendar}
+    - "ivd_number": ${ivd_number}
+    - "petitioner_name_1": ${users[0].name_full()}
+    - "petitioner_name_2": ${users[0].name_full()}
+    - "petitioner_name_3": ${users[0].name_full()}
+    - "respondent_name_1": ${other_parties[0].name_full()}
+    - "delivery_name_1": ${other_parties[0].name_full()}
+    - "delivery_street_1": ${other_parties[0].address.line_one(bare=True)}
+    - "delivery_csz_1": ${other_parties[0].address.line_two()}
+    - "hearing_date": ${""}
+    - "hearing_time": ${""}
+    - "courtroom": ${""}
+    - "court_address": ${courthouse_info}
+    - "esignature_1": ${"/s/ " + users[0].name_full() if e_signature else ""}
+    - "petitioner_street_1": ${users[0].address.line_one(bare=True)}
+    - "petitioner_csz_1": ${users[0].address.line_two()}
+    - "petitioner_phone_1": ${phone_number_formatted(users[0].phone_number)}
+    - "petitioner_email_1": ${users[0].email if users[0].has_email_address else ""}
+---
+attachment:
+  name: petition
+  variable name: petition[i]
+  filename: petition
+  docx template file: word_petition_rule_family.docx
+---
+attachment:
+  variable name: order[i]
+  name: order
+  filename: order
+  skip undefined: True
+  editable: False
+  pdf template file: order_rule_family.pdf
+  fields:
+    - "county_all_caps": ${trial_court.address.county.upper()}
+    - "in_re": ${case_type}
+    - "case_number": ${case_number}
+    - "calendar": ${calendar}
+    - "ivd_number": ${ivd_number}
+    - "petitioner_name_1": ${users[0].name_full()}
+    - "petitioner_name_2": ${users[0].name_full()}
+    - "respondent_name_1": ${other_parties[0].name_full()}
+    - "respondent_name_2": ${other_parties[0].name_full()}
+    - "respondent_party_label_1": ${opponent_label}
+    - "respondent_party_label_2": ${opponent_label}
+    - "respondent_party_label_3": ${opponent_label}
+    - "order_failure_description": |
+        % if child_support_violation:
+        pay child support and any other child related expenses
+        % elif case_type == "maintenance":
+        pay maintenance and any other spousal support related expenses
+        % elif order_paragraph.number_gathered() == 1:
+        ${order_paragraph[0].order_request}
+        elif order_paragraph.number_gathered() == 2:
+        ${order_paragraph[0].order_request} and ${order_paragraph[1].order_request}
+        elif order_paragraph.number_gathered() == 3:
+        ${order_paragraph[0].order_request}, ${order_paragraph[1].order_request}, and ${order_paragraph[2].order_request}
+        % endif
+    - "require_date": ${final_order_date}
+    - "petitioner_street": ${users[0].address.line_one(bare=True)}
+    - "petitioner_csz": ${users[0].address.line_two()}
+    - "petitioner_phone": ${phone_number_formatted(users[0].phone_number)}
+    - "petitioner_email": ${users[0].email if users[0].has_email_address else ""}
+---
+#attachment:
+#  variable name: petition_support[i]
+#  name: petition_support
+#  filename: petition_support
+#  skip undefined: True
+#  editable: False
+#  pdf template file: petition_support_family.pdf
+#  fields:
+#    - "county_all_caps": ${trial_court.address.county.upper()}
+#    - "in_re": ${case_type}
+#    - "case_number": ${case_number}
+#    - "calendar": ${calendar}
+#    - "ivd_number": ${ivd_number}
+#    - "petitioner_name_1": ${users[0].name_full()}
+#    - "petitioner_name_2": ${users[0].name_full()}
+#    - "petitioner_name_3": ${users[0].name_full()}
+#    - "petitioner_name_4": ${users[0].name_full()}
+#    - "petitioner_name_5": ${users[0].name_full()}
+#    - "petitioner_name_6": ${users[0].name_full()}
+#    - "petitioner_name_7": ${users[0].name_full()}
+#    - "petitioner_name_8": ${users[0].name_full()}
+#    - "respondent_name_1": ${other_parties[0].name_full()}
+#    - "respondent_name_2": ${other_parties[0].name_full()}
+#    - "respondent_name_3": ${other_parties[0].name_full()}
+#    - "respondent_name_4": ${other_parties[0].name_full()}
+#    - "respondent_name_5": ${other_parties[0].name_full()}
+#    - "respondent_name_6": ${other_parties[0].name_full()}
+#    - "respondent_name_7": ${other_parties[0].name_full()}
+#    - "respondent_name_8": ${other_parties[0].name_full()}
+#    - "respondent_name_9": ${other_parties[0].name_full()}
+#    - "respondent_name_10": ${other_parties[0].name_full()}
+#    - "respondent_party_label_1": ${opponent_label}
+#    - "petitioner_party_label_1": ${party_label}
+#    - "petitioner_party_label_2": ${party_label}
+#    - "petitioner_party_label_3": ${party_label}
+#    - "statute_1": ${statute}
+#    - "statute_2": ${statute}
+#    - "plea_type": |
+#        Petition for ${case_type}
+#    - "filing_date": ${filing_date}
+#    - "action_status": |
+#        % if case_completed:
+#        A final judgment was entered in said action on ${final_order_date}
+#        % else:
+#        Said action is pending and unresolved before this court
+#        % endif
+#    - "children_number": ${child.number_gathered()}
+#    - "children_names_ages": ${child_with_age.full_names()}
+#    - "parent_with_children":
