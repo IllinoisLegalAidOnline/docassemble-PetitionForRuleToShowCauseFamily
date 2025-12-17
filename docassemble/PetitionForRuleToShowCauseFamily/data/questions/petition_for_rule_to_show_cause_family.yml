@@ -8,9 +8,10 @@ metadata:
 objects:
   - users: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
   - other_parties: ALPeopleList.using(complete_attribute=['complete'])
+  - other_parties[i].lawyer: ALIndividual
   - child: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True)
   - child_with_age: ALPeopleList.using(complete_attribute=['complete'] )
-  - order_paragraph: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True)
+  - order_paragraph: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
   - other_parties[0].jail_delivery_address: ALAddress
 ---
 include:
@@ -56,6 +57,7 @@ code: |
   else:
     case_type
   party_label
+  set_progress(20)
   trial_court_index
   case_number
   filing_date
@@ -66,6 +68,7 @@ code: |
   if other_parties[0].is_represented:
     other_parties[0].lawyer.name.first
   other_parties[0].address.address
+  set_progress(40)
 
   nav.set_section('section_petition')
   petition_info
@@ -77,7 +80,7 @@ code: |
     child_support_missed_payment_count
     child_support_arrears_check
     child_support_total_amount_note
-  elif case_type == "maintenance":
+  elif case_type == "Maintenance":
     maintenance_order_date
     maintenance_amount
     maintenance_last_payment_date
@@ -86,6 +89,7 @@ code: |
     maintenance_total_amount_note
   else:
     order_paragraph.gather()
+  set_progress(60)
   willful_info
 
   nav.set_section('section_delivery')
@@ -96,11 +100,13 @@ code: |
 
   nav.set_section('section_user')
   users[0].name.first
+  set_progress(80)
   users[0].address.address
   users[0].has_email_address
   e_signature
 
   nav.set_section('section_download')
+  set_progress(100)
   forms_assembling
   statute
   if child_support_violation:
@@ -110,7 +116,7 @@ code: |
 ---
 # order paragraph gather block
 code: |
-  order_paragraph[i].number
+  order_paragraph[i].name.text
   order_paragraph[i].violation
   order_paragraph[i].order_request
   order_paragraph[i].complete = True
@@ -121,11 +127,26 @@ code: |
   child[i].birth
   child[i].complete = True
 ---
+generic object: ALIndividual
+id: debug
+continue button field: x.debug
+question: |
+  Debug
+subquestion: |
+  i is ${i}
+---
+id: general debug
+continue button field: debug
+question: |
+  Debug
+---
 reconsider: True
 code: |
+  child_with_age.clear()
   for index, kid in enumerate(child):
-    child_with_age[index].name.first = kid.name_full()
-    child_with_age[index].name.last = "(age "
+    child_with_age.append(kid)
+    #child_with_age[index].name.first = kid.name_full()
+    child_with_age[index].name.last += " (age "
     child_with_age[index].name.last += str(int(kid.age.years))
     child_with_age[index].name.last += ")"
     child_with_age[index].complete = True
@@ -261,10 +282,12 @@ fields:
 id: child support violation
 question: |
   Did the other party fail to pay child support, according to a court order?
-field: child_support_violation
-choices:
-  - Yes, child support is overdue.: True
-  - No, there is another violation.: False
+fields: 
+  - no label: child_support_violation
+    input type: radio
+    choices:
+      - Yes, child support is overdue.: True
+      - No, there is another violation.: False
 ---
 id: about child support
 continue button field: about_child_support
@@ -516,7 +539,7 @@ id: child there is another
 question: |
   Is there another child included in the child support order?
 subquestion: |
-  So far you have told us about ${child.full_names()}.
+  So far you have told us about ${fix_punctuation(child.full_names())}
 fields:
   - no label: child.there_is_another
     datatype: yesnoradio
@@ -653,8 +676,9 @@ subquestion: |
 fields:
   - no label: maintenance_arrears_check
     datatype: yesnoradio
-  - Past unpaid child support: maintenance_arrears_amount
+  - Past unpaid maintenance: maintenance_arrears_amount
     datatype: currency
+    show if: maintenance_arrears_check
 ---
 reconsider: True
 code: |
@@ -678,7 +702,7 @@ code: |
 id: maintenance total amount
 continue button field: maintenance_total_amount_note
 question: |
-   Based on your answers, ${other_parties[0].name_full()} owes ${maintenance_total_amount} in maintenance payments.
+   Based on your answers, ${other_parties[0].name_full()} owes ${currency(maintenance_total_amount)} in maintenance payments.
 subquestion: |
   If this is correct, click **Continue**. If this is incorrect, you can click **Your petition** to change your earlier answers.
 ---
@@ -690,7 +714,7 @@ subquestion: |
 
   Copy the words from that paragraph into the Order Requirement box below. For example, you could copy part of the Order that states, "put the marital real estate on the market."
 fields:
-  - Order paragraph (number or letter): order_paragraph[i].number
+  - Order paragraph (number or letter): order_paragraph[i].name.text
     maxlength: 3
   - Order requirement: order_paragraph[i].requirement
     input type: area
@@ -698,7 +722,7 @@ fields:
 ---
 id: violation
 question: |
-  How did ${other_parties[0].name_full()} violate paragraph ${order_paragraph[i].number} of the order or judgment?
+  How did ${other_parties[0].name_full()} violate paragraph ${order_paragraph[i].name.text} of the order or judgment?
 subquestion: |
   Be specific. State what ${other_parties[0].name_full()}did to violate the order or judgment. Include the amount of money, if any, claimed to be due. Include the date or dates when they violated the order or judgment. 
 
@@ -712,7 +736,7 @@ fields:
 ---
 template: order_paragraph[i].reference
 subject: |
-  **Remind me what paragraph ${order_paragraph[i].number} said**
+  **Remind me what paragraph ${order_paragraph[i].name.text} said**
 content: |
   ${order_paragraph[i].requirement}
 ---
@@ -722,9 +746,22 @@ question: |
 subquestion: |
   ${collapse_template(order_paragraph[i].reference)}
 fields:
-  - The court should order them to: order_paragraph[i].order
+  - The court should order them to: order_paragraph[i].order_request
     input type: area
     maxlength: 100
+---
+id: order paragraph there is another
+question: |
+  Did ${other_parties[0].name_full()} violate another paragraph of the order?
+subquestion: |
+  So far you have told us about:
+
+  % for para in order_paragraph:
+  * Paragraph ${para.name.text}
+  % endfor
+fields:
+  - no label: order_paragraph.there_is_another
+    datatype: yesnoradio
 ---
 id: willful info
 continue button field: willful_info
@@ -1046,7 +1083,7 @@ subquestion: |
       <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
       <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
-    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
   </div>
 
 fields:
@@ -1069,7 +1106,7 @@ subquestion: |
 ---
 reconsider: True
 code: |
-  if child_support_violation or case_type == "maintenance":
+  if child_support_violation or case_type == "Maintenance":
     statute = "750 ILCS 46/801"
   else:
     statute = "750 ILCS 5/505"
@@ -1148,32 +1185,28 @@ attachment:
           % if in_re_check:
           ${ in_re_label }
           % else:
-          % if user_ask_role == 'plaintiff':
-          % if users.number() > 1:
+          % if party_label == 'plaintiff' or party_label == "petitioner":
+          % if users.number_gathered() > 1:
           ${ users[0].name_full() }, et al.
           % else:
           ${ users[0].name_full() }
           % endif
           % else:
-          % if other_parties.number() > 1:
+          % if other_parties.number_gathered() > 1:
           ${ other_parties[0].name_full() }, et al.
           % else:
           ${ other_parties[0].name_full() }
           % endif
           % endif
-          % endif
-      
-      - "defendants": |
-          % if in_re_check:
-          ${ "" }
+          % endif     
+      - "defendant_list": |
+          % if not in_re_check:
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${ other_parties[0].name_full() } 
           % else:
-          % if user_ask_role == 'plaintiff':
-          ${ other_parties.full_names() } 
-          % else:
-          ${ users.full_names() }
+          ${ users[0].name_full() }
           % endif
           % endif
-
       - "user__1": ${ users[0].name_full() }
       - "user__2": ${ users[0].name_full() }
       - "user_mail_address_one_line__1": ${ users[0].address.on_one_line(bare=True) }
@@ -1292,11 +1325,11 @@ attachment:
     - "respondent_name_2": ${other_parties[0].name_full()}
     - "respondent_party_label_1": ${opponent_label}
     - "respondent_party_label_2": ${opponent_label}
-    - "respondent_party_label_3": ${opponent_label}
+    - "respondent_party_label_3": ${capitalize(opponent_label)}
     - "order_failure_description": |
         % if child_support_violation:
         pay child support and any other child related expenses
-        % elif case_type == "maintenance":
+        % elif case_type == "Maintenance":
         pay maintenance and any other spousal support related expenses
         % elif order_paragraph.number_gathered() == 1:
         ${order_paragraph[0].order_request}
@@ -1311,52 +1344,553 @@ attachment:
     - "petitioner_phone": ${phone_number_formatted(users[0].phone_number)}
     - "petitioner_email": ${users[0].email if users[0].has_email_address else ""}
 ---
-#attachment:
-#  variable name: petition_support[i]
-#  name: petition_support
-#  filename: petition_support
-#  skip undefined: True
-#  editable: False
-#  pdf template file: petition_support_family.pdf
-#  fields:
-#    - "county_all_caps": ${trial_court.address.county.upper()}
-#    - "in_re": ${case_type}
-#    - "case_number": ${case_number}
-#    - "calendar": ${calendar}
-#    - "ivd_number": ${ivd_number}
-#    - "petitioner_name_1": ${users[0].name_full()}
-#    - "petitioner_name_2": ${users[0].name_full()}
-#    - "petitioner_name_3": ${users[0].name_full()}
-#    - "petitioner_name_4": ${users[0].name_full()}
-#    - "petitioner_name_5": ${users[0].name_full()}
-#    - "petitioner_name_6": ${users[0].name_full()}
-#    - "petitioner_name_7": ${users[0].name_full()}
-#    - "petitioner_name_8": ${users[0].name_full()}
-#    - "respondent_name_1": ${other_parties[0].name_full()}
-#    - "respondent_name_2": ${other_parties[0].name_full()}
-#    - "respondent_name_3": ${other_parties[0].name_full()}
-#    - "respondent_name_4": ${other_parties[0].name_full()}
-#    - "respondent_name_5": ${other_parties[0].name_full()}
-#    - "respondent_name_6": ${other_parties[0].name_full()}
-#    - "respondent_name_7": ${other_parties[0].name_full()}
-#    - "respondent_name_8": ${other_parties[0].name_full()}
-#    - "respondent_name_9": ${other_parties[0].name_full()}
-#    - "respondent_name_10": ${other_parties[0].name_full()}
-#    - "respondent_party_label_1": ${opponent_label}
-#    - "petitioner_party_label_1": ${party_label}
-#    - "petitioner_party_label_2": ${party_label}
-#    - "petitioner_party_label_3": ${party_label}
-#    - "statute_1": ${statute}
-#    - "statute_2": ${statute}
-#    - "plea_type": |
-#        Petition for ${case_type}
-#    - "filing_date": ${filing_date}
-#    - "action_status": |
-#        % if case_completed:
-#        A final judgment was entered in said action on ${final_order_date}
-#        % else:
-#        Said action is pending and unresolved before this court
-#        % endif
-#    - "children_number": ${child.number_gathered()}
-#    - "children_names_ages": ${child_with_age.full_names()}
-#    - "parent_with_children":
+id: case info review screen
+event: section_case_info
+section: Case info
+question: |
+  Case info
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: in_re_check
+    button: |
+      **Does the court case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:?"**
+      ${in_re_label}
+    show if: in_re_check
+  - Edit: child_support_violation
+    button: |
+      **Did the other party fail to pay child support?**
+      ${word(yesno(child_support_violation))}
+  - Edit: case_type
+    button: |
+      **Type of case:**
+      ${case_type}
+  - Edit: party_label
+    button: |
+      **Your role:**
+      ${capitalize(party_label)}
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+    button: |
+      **County where this case is filed:**
+      ${ trial_court.address.county }
+  - Edit: case_number
+    button: |
+      **Case number:**
+      ${case_number}
+  - Edit: filing_date
+    button: |
+      **When was the case filed?**
+      ${filing_date}
+  - Edit: case_completed
+    button: |
+      **Has the case been completed?**
+      % if case_completed:
+      Yes, the final order was on ${final_order_date}
+      % else:
+      No
+      % endif
+---
+id: other party review screen
+event: section_other_party
+section: Other party
+question: |
+  Other party
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: other_parties[0].name.first
+    button: |
+      **Other party's name:**
+      ${other_parties[0].name_full()}
+  - Edit: other_parties[0].is_represented
+    button: |
+      **Does ${other_parties[0].name_full()} have a lawyer?**
+      ${word(yesno(other_parties[0].is_represented))}
+  - Edit: other_parties[0].lawyer.name.first
+    button: |
+      **${other_parties[0].name_full()}'s lawyer:**
+      ${other_parties[0].lawyer.name_full()}
+    show if: other_parties[0].is_represented
+  - Edit: other_parties[0].address.address
+    button: |
+      % if other_parties[0].is_represented == True:
+      **${ other_parties[0].lawyer.name_full() }'s address:**
+      % else:
+      **${ other_parties[0].name_full() }'s address:**
+      % endif
+      ${ other_parties[0].address.on_one_line(bare=True) }
+---
+id: petition review screen
+event: section_petition
+section: Your petition
+question: |
+  Your petition
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: child_support_violation
+    button: |
+      **Did the other party fail to pay child support?**
+      ${word(yesno(child_support_violation))}
+  - Edit: case_type
+    button: |
+      **Type of case:**
+      ${case_type}
+  - Edit: child.revisit
+    button: |
+      **Children:**
+      
+      % for kid in child:
+      * ${kid.name_full()}
+      % endfor
+    show if: child_support_violation
+  - Edit: child_support_order_date
+    button: |
+      **When did the court order child support payments?**
+      ${child_support_order_date}
+    show if: child_support_violation
+  - Edit: child_support_amount
+    button: |
+      **How much and how often is ${other_parties[0].name_full()} supposed to pay child support?**
+      ${currency(child_support_amount)} ${child_support_freq.lower()}  
+    show if: child_support_violation
+  - Edit: child_support_last_payment_date
+    button: |
+      **When did ${other_parties[0].name_full()} last pay child support?**
+      ${child_support_last_payment_date}
+    show if: child_support_violation
+  - Edit: child_support_missed_payment_count
+    button: |
+      **How many payments has ${other_parties[0].name_full()} missed?**
+      ${child_support_missed_payment_count}
+    show if: child_support_violation
+  - Edit: child_support_arrears_check
+    button: |
+      **Does ${other_parties[0].name_full()} owe a child support arrearage?**
+      % if child_support_arrears_check:
+      Yes, they owe ${currency(child_support_arrears_amount)}
+      % else:
+      No
+      % endif
+    show if: child_support_violation
+  - Edit: maintenance_order_date
+    button: |
+      **When did the court order maintenance payments?**
+      ${maintenance_order_date}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_amount
+    button: |
+      **How much and how often is ${other_parties[0].name_full()} supposed to pay maintenance?**
+      ${currency(maintenance_amount)} ${maintenance_freq.lower()}  
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_last_payment_date
+    button: |
+      **When did ${other_parties[0].name_full()} last pay maintenance?**
+      ${maintenance_last_payment_date}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_missed_payment_count
+    button: |
+      **How many payments has ${other_parties[0].name_full()} missed?**
+      ${maintenance_missed_payment_count}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_arrears_check
+    button: |
+      **Does ${other_parties[0].name_full()} owe a maintenance arrearage?**
+      % if maintenance_arrears_check:
+      Yes, they owe ${currency(maintenance_arrears_amount)}
+      % else:
+      No
+      % endif
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: order_paragraph.revisit
+    button: |
+      **Order paragraphs:**
+
+      % for para in order_paragraph:
+      * Paragraph ${para.name.text}
+      % endfor
+    show if: case_type != "Maintenance" and not child_support_violation
+---
+id: children review screen
+continue button field: child.revisit
+section: Your petition
+question: |
+  Edit the children
+subquestion: |
+  ${ child.table }
+
+  ${ child.add_action() }
+---
+table: child.table
+rows: child
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+  - Birthdate: |
+      action_button_html(url_action(row_item.attr_name("review_child")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+id: child review screen
+continue button field: x.review_child
+section: Your petition
+generic object: ALIndividual
+question: |
+  Edit ${ x.name_full() }'s information
+subquestion: |  
+review: 
+  - Edit: x.name.first
+    button: |
+      **Name:**
+      ${x.name_full()}
+  - Edit: x.birth
+    button: |
+      **${x.name_full()}'s birthdate**
+      ${x.birth}
+---
+id: order paragraphs review screen
+continue button field: order_paragraph.revisit
+section: Your petition
+question: |
+  Edit the order_paragraph
+subquestion: |
+  ${ order_paragraph.table }
+
+  ${ order_paragraph.add_action() }
+---
+table: order_paragraph.table
+rows: order_paragraph
+columns:
+  - Paragraph number: |
+      row_item.name.text if defined("row_item.name.text") else ""
+  - Order, violation, and request: |
+      action_button_html(url_action(row_item.attr_name("review_order")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+id: order paragraph review screen
+continue button field: x.review_order
+section: Your petition
+generic object: Thing
+question: |
+  Edit information about paragraph ${x.name.text}
+subquestion: |  
+review: 
+  - Edit: x.name.text
+    button: |
+      **Paragraph number:**
+      ${x.name.text}
+  - Edit: x.violation
+    button: |
+      **How did ${other_parties[0].name_full()} violate this paragraph?**
+      ${x.violation}
+  - Edit: x.order_request
+    button: |
+      **What do you want the court to order ${other_parties[0].name_full()} to do?**
+      ${x.order_request}
+---
+id: delivery review screen
+event: section_delivery
+section: Delivery and filing details
+question: |
+  Delivery and filing details
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: other_parties[0].knows_delivery_method
+    button: |
+      **Do you know how you will deliver your forms to them?**
+      ${ word(yesno(other_parties[0].knows_delivery_method)) }
+  - Edit: other_parties[0].physical_delivery
+    button: |
+      **Delivery by: (Edit to view and change details)**
+      
+      % if other_parties[0].efm_delivery == True:
+        * E-filing system
+      % endif
+      % if other_parties[0].email_delivery == True:
+        * Email
+      % endif
+      % if other_parties[0].physical_delivery == True:
+        * Mail, delivery company, or in-person hand delivery
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].mail_delivery == True:
+        * US mail or delivery company
+      % endif
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].hand_delivery == True:
+        * Hand delivery
+      % endif
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].jail_delivery == True:
+        * Mail from prison or jail
+      % endif
+      % endif
+      % if other_parties[0].efm_delivery != True and other_parties[0].email_delivery != True and other_parties[0].physical_delivery != True:
+        * None entered
+      % endif
+    show if: other_parties[0].knows_delivery_method
+  - Edit: other_parties[0].delivery_date
+    button: |
+      **Delivery on:**
+      ${ other_parties[0].delivery_date } at ${ format_time(other_parties[0].delivery_time, "h:mm a") }
+    show if: other_parties[0].knows_delivery_method
+---
+id: user review screen
+event: section_user
+section: About you
+question: |
+  About you
+subquestion: |
+  Edit your answers below.
+review: 
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${ users[0].name_full() }
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${ users[0].address.on_one_line(bare=True) }
+  - Edit: users[0].phone_number
+    button: |
+      **Your phone number:**
+      ${ phone_number_formatted(users[0].phone_number) }
+  - Edit: users[0].has_email_address
+    button: |
+      **Do you have an email address?**
+      ${ word(yesno(users[0].has_email_address)) }
+  - Edit: users[0].email
+    button: |
+      **Your email:**
+      ${ users[0].email }
+    show if: users[0].has_email_address
+---
+id: review screen
+event: review_answers
+question: |
+  Review screen
+subquestion: |
+  Edit your answers below.
+review: 
+  - note: |
+      <h4>Case info</h4>
+  - Edit: in_re_check
+    button: |
+      **Does the court case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:?"**
+      ${in_re_label}
+    show if: in_re_check
+  - Edit: child_support_violation
+    button: |
+      **Did the other party fail to pay child support?**
+      ${word(yesno(child_support_violation))}
+  - Edit: case_type
+    button: |
+      **Type of case:**
+      ${case_type}
+  - Edit: party_label
+    button: |
+      **Your role:**
+      ${capitalize(party_label)}
+  - Edit: 
+      - trial_court_index
+      - recompute:
+        - trial_court
+    button: |
+      **County where this case is filed:**
+      ${ trial_court.address.county }
+  - Edit: case_number
+    button: |
+      **Case number:**
+      ${case_number}
+  - Edit: filing_date
+    button: |
+      **When was the case filed?**
+      ${filing_date}
+  - Edit: case_completed
+    button: |
+      **Has the case been completed?**
+      % if case_completed:
+      Yes, the final order was on ${final_order_date}
+      % else:
+      No
+      % endif
+  - note: |
+      <h4>Other party</h4>
+  - Edit: other_parties[0].name.first
+    button: |
+      **Other party's name:**
+      ${other_parties[0].name_full()}
+  - Edit: other_parties[0].is_represented
+    button: |
+      **Does ${other_parties[0].name_full()} have a lawyer?**
+      ${word(yesno(other_parties[0].is_represented))}
+  - Edit: other_parties[0].lawyer.name.first
+    button: |
+      **${other_parties[0].name_full()}'s lawyer:**
+      ${other_parties[0].lawyer.name_full()}
+    show if: other_parties[0].is_represented
+  - Edit: other_parties[0].address.address
+    button: |
+      % if other_parties[0].is_represented == True:
+      **${ other_parties[0].lawyer.name_full() }'s address:**
+      % else:
+      **${ other_parties[0].name_full() }'s address:**
+      % endif
+      ${ other_parties[0].address.on_one_line(bare=True) }
+  - note: |
+      <h4>Your petition</h4>
+  - Edit: child.revisit
+    button: |
+      **Children:**
+      
+      % for kid in child:
+      * ${kid.name_full()}
+      % endfor
+    show if: child_support_violation
+  - Edit: child_support_order_date
+    button: |
+      **When did the court order child support payments?**
+      ${child_support_order_date}
+    show if: child_support_violation
+  - Edit: child_support_amount
+    button: |
+      **How much and how often is ${other_parties[0].name_full()} supposed to pay child support?**
+      ${currency(child_support_amount)} ${child_support_freq.lower()}  
+    show if: child_support_violation
+  - Edit: child_support_last_payment_date
+    button: |
+      **When did ${other_parties[0].name_full()} last pay child support?**
+      ${child_support_last_payment_date}
+    show if: child_support_violation
+  - Edit: child_support_missed_payment_count
+    button: |
+      **How many payments has ${other_parties[0].name_full()} missed?**
+      ${child_support_missed_payment_count}
+    show if: child_support_violation
+  - Edit: child_support_arrears_check
+    button: |
+      **Does ${other_parties[0].name_full()} owe a child support arrearage?**
+      % if child_support_arrears_check:
+      Yes, they owe ${currency(child_support_arrears_amount)}
+      % else:
+      No
+      % endif
+    show if: child_support_violation
+  - Edit: maintenance_order_date
+    button: |
+      **When did the court order maintenance payments?**
+      ${maintenance_order_date}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_amount
+    button: |
+      **How much and how often is ${other_parties[0].name_full()} supposed to pay maintenance?**
+      ${currency(maintenance_amount)} ${maintenance_freq.lower()}  
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_last_payment_date
+    button: |
+      **When did ${other_parties[0].name_full()} last pay maintenance?**
+      ${maintenance_last_payment_date}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_missed_payment_count
+    button: |
+      **How many payments has ${other_parties[0].name_full()} missed?**
+      ${maintenance_missed_payment_count}
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: maintenance_arrears_check
+    button: |
+      **Does ${other_parties[0].name_full()} owe a maintenance arrearage?**
+      % if maintenance_arrears_check:
+      Yes, they owe ${currency(maintenance_arrears_amount)}
+      % else:
+      No
+      % endif
+    show if: case_type == "Maintenance" and not child_support_violation
+  - Edit: order_paragraph.revisit
+    button: |
+      **Order paragraphs:**
+
+      % for para in order_paragraph:
+      * Paragraph ${para.name.text}
+      % endfor
+    show if: case_type != "Maintenance" and not child_support_violation
+  - note: |
+      <h4>Delivery and filing details</h4>
+  - Edit: other_parties[0].knows_delivery_method
+    button: |
+      **Do you know how you will deliver your forms to them?**
+      ${ word(yesno(other_parties[0].knows_delivery_method)) }
+  - Edit: other_parties[0].physical_delivery
+    button: |
+      **Delivery by: (Edit to view and change details)**
+      
+      % if other_parties[0].efm_delivery == True:
+        * E-filing system
+      % endif
+      % if other_parties[0].email_delivery == True:
+        * Email
+      % endif
+      % if other_parties[0].physical_delivery == True:
+        * Mail, delivery company, or in-person hand delivery
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].mail_delivery == True:
+        * US mail or delivery company
+      % endif
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].hand_delivery == True:
+        * Hand delivery
+      % endif
+      % endif
+      % if other_parties[0].physical_delivery == True:
+      % if other_parties[0].jail_delivery == True:
+        * Mail from prison or jail
+      % endif
+      % endif
+      % if other_parties[0].efm_delivery != True and other_parties[0].email_delivery != True and other_parties[0].physical_delivery != True:
+        * None entered
+      % endif
+    show if: other_parties[0].knows_delivery_method
+  - Edit: other_parties[0].delivery_date
+    button: |
+      **Delivery on:**
+      ${ other_parties[0].delivery_date } at ${ format_time(other_parties[0].delivery_time, "h:mm a") }
+    show if: other_parties[0].knows_delivery_method
+  - note: |
+      <h4>About you</h4>
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${ users[0].name_full() }
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${ users[0].address.on_one_line(bare=True) }
+  - Edit: users[0].phone_number
+    button: |
+      **Your phone number:**
+      ${ phone_number_formatted(users[0].phone_number) }
+  - Edit: users[0].has_email_address
+    button: |
+      **Do you have an email address?**
+      ${ word(yesno(users[0].has_email_address)) }
+  - Edit: users[0].email
+    button: |
+      **Your email:**
+      ${ users[0].email }
+    show if: users[0].has_email_address
