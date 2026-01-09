@@ -57,6 +57,7 @@ code: |
   party_label
   set_progress(20)
   trial_court_index
+  courthouse_info
   case_number
   if in_re_check:
     in_re_label
@@ -70,8 +71,8 @@ code: |
   nav.set_section('section_petition')
   petition_info
   if violation_type == "child":
-    children.gather()
     child_support_order_date
+    children.gather()
     child_support_amount
     child_support_last_payment_date
     child_support_missed_payment_count
@@ -90,6 +91,8 @@ code: |
   willful_info
 
   nav.set_section('section_delivery')
+  if has_court_date:
+      hearing_date
   if other_parties[0].is_represented:
     other_parties[0].lawyer.name.first
   other_parties[0].address.address
@@ -801,6 +804,71 @@ subquestion: |
 
   **Without just cause** means they did not have a good reason to do it.
 ---
+id: hearing scheduled
+question: |
+  Do you already have a court date scheduled for this petition?
+subquestion: |
+  In some counties, the circuit clerk can give you a hearing date before you file your petition. In other counties, you will get a hearing date when you file your motion. If you have this information now, you can add it to your forms.
+  
+  If the clerk gives you the hearing date after you file your petition, you can add it to your *Notice of Court Date for Motion* form later. 
+  
+  **Note:** You must add this information to your *Notice of Court Date for Motion* before you deliver it to ${other_parties[0].name_full()}.
+fields:
+  - "Know court date and time?": has_court_date
+    datatype: yesnoradio
+---
+id: hearing info
+question: |
+  Court hearing information
+subquestion: |
+  Enter the date, time, and courtroom information for your citation hearing.
+
+  If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${other_parties[0].name_full()}.
+fields:
+  - Date: hearing_date
+    datatype: date
+    min: ${ today().format("yyyy-MM-dd") }
+    required: False
+  - Time: hearing_time
+    datatype: time
+    required: False
+  - Hearing type: hearing_type
+    datatype: checkboxes
+    required: False
+    none of the above: False
+    choices:
+      - In person: person
+      - By phone or video: remote
+  - Courtroom: courtroom
+    maxlength: 10
+    required: False
+  - Video conference website (URL): remote_website
+    maxlength: 100
+    input type: area
+    rows: 2
+    required: False
+    show if: hearing_type['remote']
+  - Video conference log-in information (Meeting ID, password, etc.): remote_login
+    maxlength: 100
+    input type: area
+    rows: 2
+    required: False
+    show if: hearing_type['remote']
+  - Call-in phone number for remote appearance: remote_phone
+    datatype: al_international_phone
+    required: False
+    show if: hearing_type['remote']
+---
+template: hearing_info_help
+subject: |
+  **See where to put hearing information on your forms**
+content: |  
+  You can put information on how to attend court on the bottom of page 1 of your *Notice of Court Date for Motion*.
+
+  We will add the courtroom address to your forms. To get the other information, contact your Circuit Clerk. You can look up how to contact them using [**Find Your Court**](https://www.illinoiscourts.gov/courts-directory/interactive-map/by-court-type/) on the Illinois Courts website.
+  
+  [FILE hearing_information.png, 100%, Part of Notice of Court Date for Motion form]
+---
 id: knows delivery method
 generic object: ALIndividual
 question: |
@@ -1296,7 +1364,7 @@ attachment:
           % endif
           % else:
           ${""}
-          % endif
+          % endif    
 ---
 attachment:
   variable name: notice[i]
@@ -1410,6 +1478,22 @@ attachment:
           ${""}
           % endif
       - "is_additional_proof_delivery_yes": ${ other_parties.number() > 1 }
+      - "hearing_date": ${hearing_date if has_court_date else ""}
+      - "hearing_time": ${format_time(hearing_time, format='h:mm') if has_court_date and hearing_time != "" else ""}
+      - "hearing_am_checkbox": ${True if has_court_date and format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
+      - "hearing_pm_checkbox": ${True if has_court_date and format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
+      - "in_person_cb": ${True if has_court_date and hearing_type['person'] else False}
+      - "remote_cb": ${True if has_court_date and hearing_type['remote'] else False}
+      - "hearing_courtroom": ${courtroom if has_court_date else ""}
+      - "courthouse_address": |
+          % if has_court_date and hearing_type['person']:
+          ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
+          % endif
+      - "remote_url": ${ remote_website if has_court_date and hearing_type['remote'] else ""}
+      - "remote_login": ${ remote_login if has_court_date and hearing_type['remote'] else ""}
+      - "remote_phone": ${ phone_number_formatted(remote_phone) if has_court_date and hearing_type['remote'] else ""}
+      - "clerk_phone": ${trial_court.phone if has_court_date else ""}
+      - "clerk_website": ${trial_court.website if has_court_date else ""}
 ---
 #old notice form based on LHI template
 #attachment:
@@ -1748,6 +1832,54 @@ question: |
 subquestion: |
   Edit your answers below.
 review: 
+  - Edit: has_court_date
+    button: |
+      **Do you have a court date?**
+      ${word(yesno(has_court_date))}
+  - Edit: hearing_date
+    button: |
+      **Hearing information:**
+      
+      % if hearing_date != "":
+      * Date: ${hearing_date}
+      % else:
+      * Date: None entered
+      % endif
+      % if hearing_time != "":
+      * Time: ${ format_time(hearing_time, "h:mm a") }
+      % else:
+      * Time: None entered
+      % endif
+      % if hearing_type['person'] and not hearing_type['remote']:
+      * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
+      % if courtroom != "":
+      * Courtroom: ${courtroom}
+      % else:
+      * Courtroom: None entered
+      % endif
+      % if hearing_type['remote'] and remote_website != "":
+      * Video conference website (URL): ${remote_website}
+      % elif hearing_type['remote']:
+      * Video conference website (URL): None entered
+      % endif
+      % if hearing_type['remote'] and remote_login != "":
+      * Log-in information: ${remote_login}
+      % elif hearing_type['remote']:
+      * Log-in information: None entered
+      % endif
+      % if hearing_type['remote'] and remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % elif hearing_type['remote']:
+      * Call-in phone number: None entered
+      % endif
+    show if: has_court_date
   - Edit: other_parties[0].is_represented
     button: |
       **Does ${other_parties[0].name_full()} have a lawyer?**
@@ -1990,6 +2122,54 @@ review:
     show if: violation_type == "other"
   - note: |
       <h4>Delivery and filing details</h4>
+  - Edit: has_court_date
+    button: |
+      **Do you have a court date?**
+      ${word(yesno(has_court_date))}
+  - Edit: hearing_date
+    button: |
+      **Hearing information:**
+      
+      % if hearing_date != "":
+      * Date: ${hearing_date}
+      % else:
+      * Date: None entered
+      % endif
+      % if hearing_time != "":
+      * Time: ${ format_time(hearing_time, "h:mm a") }
+      % else:
+      * Time: None entered
+      % endif
+      % if hearing_type['person'] and not hearing_type['remote']:
+      * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
+      % if courtroom != "":
+      * Courtroom: ${courtroom}
+      % else:
+      * Courtroom: None entered
+      % endif
+      % if hearing_type['remote'] and remote_website != "":
+      * Video conference website (URL): ${remote_website}
+      % elif hearing_type['remote']:
+      * Video conference website (URL): None entered
+      % endif
+      % if hearing_type['remote'] and remote_login != "":
+      * Log-in information: ${remote_login}
+      % elif hearing_type['remote']:
+      * Log-in information: None entered
+      % endif
+      % if hearing_type['remote'] and remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % elif hearing_type['remote']:
+      * Call-in phone number: None entered
+      % endif
+    show if: has_court_date
   - Edit: other_parties[0].is_represented
     button: |
       **Does ${other_parties[0].name_full()} have a lawyer?**
