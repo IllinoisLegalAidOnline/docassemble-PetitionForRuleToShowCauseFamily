@@ -71,13 +71,13 @@ code: |
   nav.set_section('section_petition')
   petition_info
   if violation_type == "child":
-    child_support_order_date
-    children.gather()
+    child_support_order_date  
     child_support_amount
     child_support_last_payment_date
     child_support_missed_payment_count
     child_support_arrears_check
     child_support_total_amount_note
+    children.gather()
   elif violation_type == "maintain":
     maintenance_order_date
     maintenance_amount
@@ -110,6 +110,7 @@ code: |
 
   nav.set_section('section_download')
   set_progress(100)
+  next_steps
   forms_assembling
   statute
   snapshot_forms
@@ -161,8 +162,7 @@ code: |
   stuff_to_snapshot = {
           'start_time': str(current_datetime().format_datetime()),
           'started_interview': True, 
-          }
-  
+          } 
   try:
     stuff_to_snapshot['ip_address'] = device(ip=True)
   except:
@@ -179,7 +179,7 @@ code: |
     elif violation_type == "maintain":
       stuff_to_snapshot['case'] = "spousal support"
     else:
-      stuff_to_snapshot['case'] = showifdef('case_type')
+      stuff_to_snapshot['case'] = "other violation"
   
   store_variables_snapshot(
           data=stuff_to_snapshot, persistent=True
@@ -240,8 +240,8 @@ subquestion: |
   When someone does not follow a court order from a family law case you were in, you have a few options:
 
   * You can go into **{mediation}**. If you are in Cook County, you may be able to go to the [**Center for Conflict Resolution**](https://www.ccrchicago.org/).
-  * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
   * If you need help collecting child support, you can ask the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents/apply.html) for help.
+  * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
 terms:
   - "contempt of court": |
       When someone violates a court order or disrespects the court, they are in **contempt of court**.
@@ -266,6 +266,10 @@ fields:
       - Support
       - Parentage
       - Order of Protection
+      - Other
+  - Other case type: other_case_type
+    js show if: |
+      val('case_type') === "Other"
 ---
 id: in re check
 question: |
@@ -295,7 +299,7 @@ fields:
     input type: radio
     choices:
       - They failed to pay child support.: child
-      - They failed to pay spousal support.: maintain
+      - They failed to pay maintenance (spousal support, formerly called alimony).: maintain
       - They violated a court order in another way.: other
 ---
 id: about child support
@@ -425,7 +429,11 @@ fields:
 ---
 id: filing date
 question: |
+  % if case_type == "Other":
+  When was the ${other_case_type} case filed with the court?
+  % else:
   When was the ${case_type} case filed with the court?
+  % endif
 fields:
   - Filing date: filing_date
     datatype: ThreePartsDate
@@ -433,7 +441,11 @@ fields:
 ---
 id: case completed
 question: |
+  % if case_type == "Other":
+  Has the ${other_case_type} case been completed?
+  % else:
   Has the ${case_type} case been completed?
+  % endif
 subquestion: |
   If the court entered a final Order or Judgment, your case is completed.
 
@@ -459,7 +471,11 @@ sets:
   - other_parties[i].name.suffix
 id: other party name
 question: |
+  % if case_type == "Other":
+  What is the name of the other party in the ${other_case_type} case?
+  % else:
   What is the name of the other party in the ${case_type} case?
+  % endif
 subquestion: |
   Their name should be on the top of the order or judgment.
 fields:
@@ -525,9 +541,13 @@ question: |
 subquestion: |
   Your *Petition for Rule to Show Cause* form will include information about your case.
 
-  If you are asking the court to enforce a child support or maintenance order, your form will say how much and how often you are supposed to be paid and how much ${other_parties[0].name_full()} owes you. It will also list the names and birthdates of any children.
-
-  Otherwise, your form will say how ${other_parties[0].name_full()} violated each paragraph of the court order and what you are asking the court to tell ${other_parties[0].name_full()} to do.
+  % if violation_type == "child":
+  Your form will say how much and how often you are supposed to be paid child support and how much ${other_parties[0].name_full()} owes you. It will also list the names and birthdates of any children.
+  % elif violation_type == "maintain":
+  Your form will say how much and how often you are supposed to be paid maintenance and how much ${other_parties[0].name_full()} owes you.  
+  % else:
+  Your form will say how ${other_parties[0].name_full()} violated each paragraph of the court order and what you are asking the court to tell ${other_parties[0].name_full()} to do.
+  % endif
 
   The next screens will ask for information that will go into your petition.
 ---
@@ -605,6 +625,8 @@ id: maintenance order date
 question: |
   When did the court order maintenance payments?
 subquestion: |
+  Maintenance is also known as "spousal support" or "alimony."
+  
   This date should be on the order.
 fields:
   - Date: maintenance_order_date
@@ -615,6 +637,8 @@ fields:
 id: child support amount
 question: |
   How much and how often is ${other_parties[0].name_full()} supposed to pay child support?
+subquestion: |
+  This amount should be listed on the ${child_support_order_date} order.
 fields:
   - Amount: child_support_amount
     datatype: currency
@@ -710,29 +734,55 @@ fields:
 ---
 reconsider: True
 code: |
-  child_support_total_amount = (child_support_amount * child_support_missed_payment_count)
+  missed_child_support = (child_support_amount * child_support_missed_payment_count)
+  child_support_total_amount = missed_child_support
   if child_support_arrears_check:
     child_support_total_amount += child_support_arrears_amount
 ---
 id: child support total amount
 continue button field: child_support_total_amount_note
 question: |
-   Based on your answers, ${other_parties[0].name_full()} owes ${currency(child_support_total_amount)} in child support payments.
+  What ${other_parties[0].name_full()} owes in child support  
 subquestion: |
+  Based on your answers, ${other_parties[0].name_full()} owes ${currency(child_support_total_amount)} in child support payments. 
+
+  % if child_support_arrears_check:
+  Here's how we figured out this total:
+  
+  * ${nice_number(child_support_missed_payment_count,use_word=False)} missed payments of ${currency(child_support_amount)}, which comes to ${currency(missed_child_support)}.
+  * ${currency(child_support_arrears_amount)} in previously ordered past due support (arrears).
+  * When added together, the missed payments and the past due support total ${currency(child_support_total_amount)}.
+  % else:
+  Here's how we figured out this total: ${nice_number(child_support_missed_payment_count,use_word=False)} missed payments of ${currency(child_support_amount)} comes to ${currency(child_support_total_amount)}.
+  % endif
+  
   If this is correct, click **Next**. If this is incorrect, you can click **Your petition** to change your earlier answers.
 ---
 reconsider: True
 code: |
-  maintenance_total_amount = (maintenance_amount * maintenance_missed_payment_count)
+  missed_maintenance = (maintenance_amount * maintenance_missed_payment_count)
+  maintenance_total_amount = missed_maintenance
   if maintenance_arrears_check:
    maintenance_total_amount += maintenance_arrears_amount
 ---
 id: maintenance total amount
 continue button field: maintenance_total_amount_note
 question: |
-   Based on your answers, ${other_parties[0].name_full()} owes ${currency(maintenance_total_amount)} in maintenance payments.
+  What ${other_parties[0].name_full()} owes in maintenance
 subquestion: |
-  If this is correct, click **Continue**. If this is incorrect, you can click **Your petition** to change your earlier answers.
+  Based on your answers, ${other_parties[0].name_full()} owes ${currency(maintenance_total_amount)} in maintenance payments.
+
+  % if maintenance_arrears_check:
+  Here's how we figured out this total:
+  
+  * ${nice_number(maintenance_missed_payment_count,use_word=False)} missed payments of ${currency(maintenance_amount)}, which comes to ${currency(missed_maintenance)}.
+  * ${currency(maintenance_arrears_amount)} in previously ordered past due support (arrears).
+  * When added together, the missed payments and the past due support total ${currency(maintenance_total_amount)}.
+  % else:
+  Here's how we figured out this total: ${nice_number(maintenance_missed_payment_count,use_word=False)} missed payments of ${currency(maintenance_amount)} comes to ${currency(missed_maintenance)}.
+  % endif
+  
+  If this is correct, click **Next**. If this is incorrect, you can click **Your petition** to change your earlier answers.
 ---
 id: order paragraph
 question: |
@@ -740,7 +790,9 @@ question: |
 subquestion: |
   Enter the paragraph number of the Order that was violated.
 
-  Copy the words from that paragraph into the Order Requirement box below. For example, if the paragraph says, "Petitioner shall put the marital property up for sale by October 1, 2025," you should enter the "put the marital property up for sale by October 1, 2025." The paragraph may or may not have ${other_parties[0].name_full()}'s name or role.
+  In the first box, enter the paragraph number of the Order that was violated.
+
+  In the second box, enter the words from that paragraph that explain what ${other_parties[0].name_full()} was supposed to do. For example, if the paragraph says, “Petitioner shall put the marital property up for sale by October 1, 2025,” you should enter “Put the marital property up for sale by October 1, 2025.” The paragraph may or may not have ${other_parties[0].name_full()}’s name or role.
 fields:
   - Order paragraph (number or letter): order_paragraphs[i].name.text
     maxlength: 5
@@ -1171,17 +1223,19 @@ subquestion: |
 
   <div class="alert alert-info ilao-info" role="alert">
     <h6 class="alert-heading">What it means to sign your forms</h6>
-    <p>By signing your <i>Petition for Rule to Show Cause</i>, you are certifying that:</p>
+    <p>By signing your <i>Petition for Rule to Show Cause</i> and the <i>Proof of Delivery</i> form, you are certifying that:</p>
     <p><ul>
       <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
       <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
     <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
-     <p>By signing your <i>Notice of Court Date for Motion</i> and <i>Proof of Delivery</i> forms, you are certifying that:</p>
+     <p>By signing your <i>Notice of Court Date for Motion</i> form, you are certifying that:</p>
     <p><ul>
-      <li>Everything on the forms is true and correct, or you have been informed or believe it to be true and correct, and</li>
-      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>    </ul></p>
-  <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+      <li>You read the document,</li>
+      <li>You have been informed and believe it is true and correct, and</li>
+      <li>You are not filing it to cause delay or for another bad reason.</li>
+  </ul></p>
+  <p>See the <a href="https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/9ce1fce9-895f-463e-b87d-f9b7631f8fde/Rule%20137.pdf"><b>Illinois Supreme Court Rule 137</b></a> for more information.</p>
   </div>
 
 fields:
@@ -1190,6 +1244,23 @@ fields:
 terms:
   - "e-signature": |
       An e-signature is an electronic signature. It is a digital version of a signature that has the same effect as a hand-written signature.
+---
+id: next steps
+continue button field: next_steps
+question: |
+  Next steps
+subquestion: |
+  Before you file your petition, you should attach a copy of the order to the petition. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
+
+  Then, you can file the completed and signed forms to the clerk. You may need to file the forms electronically. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
+
+  % if other_parties[0].is_represented:
+  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].lawyer.name_full()}.
+  % else:
+  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()}.
+  % endif
+
+  You will need to attend the hearing on the scheduled day. You should bring copies of your forms, including any exhibits, to the hearing.
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -1277,7 +1348,7 @@ attachment:
   editable: False
   pdf template file: aoic_proof_of_delivery.pdf
   fields:
-      - "trial_court_county": ${trial_court.address.county.upper()}
+      - "trial_court_county": ${trial_court.address.county}
       - "plaintiffs": |
           % if in_re_check:
           ${ in_re_label }
@@ -1380,7 +1451,7 @@ attachment:
           ${ in_re_label }
           % else:
           % if party_label == 'plaintiff' or party_label == 'petitioner':
-          ${ users[0].name_full() }, et al.
+          ${ users[0].name_full() }
           % else:
           ${ other_parties[0].name_full() }
           % endif
@@ -1388,7 +1459,7 @@ attachment:
       - "defendants": |
           % if in_re_check:
           ${ "" }
-          % elif party_label == "plaintiff":
+          % elif party_label == "plaintiff" or party_label == "petitioner":
           ${other_parties[0].name_full()}
           % else:
           ${users[0].name_full()}
@@ -1410,7 +1481,7 @@ attachment:
       - "e_sign_name__2": ${ users[0].name_full() if e_signature else '' }
       - "for_self": ${True}
       - "for_self_2": ${True}      
-      - "motion_summary": ${ "Petition for Rule to Show Cause"}
+      - "motion_summary": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
 
       - "hearing_date": ${ "" }
       - "hearing_time": ${ "" }
@@ -1426,10 +1497,10 @@ attachment:
       - "clerk_phone": ${ "" }
       - "clerk_website": ${ "" }
         
-      - "document_name": ${ "Petition for Rule to Show Cause"}
+      - "document_name": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
           % if other_parties[0].is_represented:
-          ${ other_parties[0].lawyer.name_full() }, (lawyer for ${ other_parties[0].name_full() })
+          ${ other_parties[0].lawyer.name_full() } (lawyer for ${ other_parties[0].name_full() })
           % else:
           ${ other_parties[0].name_full() }
           % endif
@@ -1580,15 +1651,6 @@ question: |
 subquestion: |
   Edit your answers below.
 review: 
-  - Edit: in_re_check
-    button: |
-      **Does the court case have the words "In re:" in the name?**
-      ${word(yesno(in_re_check))}
-  - Edit: in_re_label
-    button: |
-      **What does it say after "In re:?"**
-      ${in_re_label}
-    show if: in_re_check
   - Edit: violation_type
     button: |
       **How did the other party not follow the court order?**
@@ -1597,12 +1659,16 @@ review:
       % elif violation_type == "maintain":
       They failed to pay spousal support.
       % else:
-      They violated a courd order in another way.
+      They violated a court order in another way.
       % endif
   - Edit: case_type
     button: |
       **Type of case:**
+      % if case_type == "Other":
+      ${other_case_type}
+      % else:
       ${case_type}
+      % endif
   - Edit: party_label
     button: |
       **Your role:**
@@ -1630,6 +1696,15 @@ review:
       * IV-D case number: ${ivd_number}
       % endif 
       % endif
+  - Edit: in_re_check
+    button: |
+      **Does the court case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:?"**
+      ${in_re_label}
+    show if: in_re_check
   - Edit: filing_date
     button: |
       **When was the case filed?**
@@ -1663,20 +1738,16 @@ review:
       % elif violation_type == "maintain":
       They failed to pay spousal support.
       % else:
-      They violated a courd order in another way.
+      They violated a court order in another way.
       % endif
   - Edit: case_type
     button: |
       **Type of case:**
+      % if case_type == "Other":
+      ${other_case_type}
+      % else:
       ${case_type}
-  - Edit: children.revisit
-    button: |
-      **Children (Edit to change names and birthdates):**
-      
-      % for kid in children:
-      * ${kid.name_full()}
-      % endfor
-    show if: violation_type == "child"
+      % endif
   - Edit: child_support_order_date
     button: |
       **When did the court order child support payments?**
@@ -1695,7 +1766,7 @@ review:
   - Edit: child_support_missed_payment_count
     button: |
       **How many payments has ${other_parties[0].name_full()} missed?**
-      ${child_support_missed_payment_count}
+      ${nice_number(child_support_missed_payment_count,use_word=False)}
     show if: violation_type == "child"
   - Edit: child_support_arrears_check
     button: |
@@ -1705,6 +1776,14 @@ review:
       % else:
       No
       % endif
+    show if: violation_type == "child"
+  - Edit: children.revisit
+    button: |
+      **Children (Edit to change names and birthdates):**
+      
+      % for kid in children:
+      * ${kid.name_full()}
+      % endfor
     show if: violation_type == "child"
   - Edit: maintenance_order_date
     button: |
@@ -1724,7 +1803,7 @@ review:
   - Edit: maintenance_missed_payment_count
     button: |
       **How many payments has ${other_parties[0].name_full()} missed?**
-      ${maintenance_missed_payment_count}
+      ${nice_number(maintenance_missed_payment_count,use_word=False)}
     show if: violation_type == "maintain"
   - Edit: maintenance_arrears_check
     button: |
@@ -1958,7 +2037,11 @@ review:
   - Edit: users[0].phone_number
     button: |
       **Your phone number:**
+      % if users[0].phone_number == "":
+      None entered
+      % else:
       ${ phone_number_formatted(users[0].phone_number) }
+      % endif
   - Edit: users[0].has_email_address
     button: |
       **Do you have an email address?**
@@ -1968,6 +2051,10 @@ review:
       **Your email:**
       ${ users[0].email }
     show if: users[0].has_email_address
+  - Edit: e_signature
+    button: |
+      **Do you want to add your electronic signature to your forms?**
+      ${word(yesno(e_signature))}
 ---
 id: review screen
 event: review_answers
@@ -1978,15 +2065,6 @@ subquestion: |
 review: 
   - note: |
       <h4>Case info</h4>
-  - Edit: in_re_check
-    button: |
-      **Does the court case have the words "In re:" in the name?**
-      ${word(yesno(in_re_check))}
-  - Edit: in_re_label
-    button: |
-      **What does it say after "In re:?"**
-      ${in_re_label}
-    show if: in_re_check
   - Edit: violation_type
     button: |
       **How did the other party not follow the court order?**
@@ -1995,12 +2073,16 @@ review:
       % elif violation_type == "maintain":
       They failed to pay spousal support.
       % else:
-      They violated a courd order in another way.
+      They violated a court order in another way.
       % endif
   - Edit: case_type
     button: |
       **Type of case:**
+      % if case_type == "Other":
+      ${other_case_type}
+      % else:
       ${case_type}
+      % endif
   - Edit: party_label
     button: |
       **Your role:**
@@ -2028,6 +2110,15 @@ review:
       * IV-D case number: ${ivd_number}
       % endif 
       % endif
+  - Edit: in_re_check
+    button: |
+      **Does the court case have the words "In re:" in the name?**
+      ${word(yesno(in_re_check))}
+  - Edit: in_re_label
+    button: |
+      **What does it say after "In re:?"**
+      ${in_re_label}
+    show if: in_re_check
   - Edit: filing_date
     button: |
       **When was the case filed?**
@@ -2046,14 +2137,6 @@ review:
       ${other_parties[0].name_full()}
   - note: |
       <h4>Your petition</h4>
-  - Edit: children.revisit
-    button: |
-      **Children (Edit to change names and birthdates):**
-      
-      % for kid in children:
-      * ${kid.name_full()}
-      % endfor
-    show if: violation_type == "child"
   - Edit: child_support_order_date
     button: |
       **When did the court order child support payments?**
@@ -2072,7 +2155,7 @@ review:
   - Edit: child_support_missed_payment_count
     button: |
       **How many payments has ${other_parties[0].name_full()} missed?**
-      ${child_support_missed_payment_count}
+      ${nice_number(child_support_missed_payment_count,use_word=False)}
     show if: violation_type == "child"
   - Edit: child_support_arrears_check
     button: |
@@ -2082,6 +2165,14 @@ review:
       % else:
       No
       % endif
+    show if: violation_type == "child"
+  - Edit: children.revisit
+    button: |
+      **Children (Edit to change names and birthdates):**
+      
+      % for kid in children:
+      * ${kid.name_full()}
+      % endfor
     show if: violation_type == "child"
   - Edit: maintenance_order_date
     button: |
@@ -2101,7 +2192,7 @@ review:
   - Edit: maintenance_missed_payment_count
     button: |
       **How many payments has ${other_parties[0].name_full()} missed?**
-      ${maintenance_missed_payment_count}
+      ${nice_number(maintenance_missed_payment_count,use_word=False)}
     show if: violation_type == "maintain"
   - Edit: maintenance_arrears_check
     button: |
@@ -2241,7 +2332,11 @@ review:
   - Edit: users[0].phone_number
     button: |
       **Your phone number:**
+      % if users[0].phone_number == "":
+      None entered
+      % else:
       ${ phone_number_formatted(users[0].phone_number) }
+      % endif
   - Edit: users[0].has_email_address
     button: |
       **Do you have an email address?**
@@ -2251,3 +2346,7 @@ review:
       **Your email:**
       ${ users[0].email }
     show if: users[0].has_email_address
+  - Edit: e_signature
+    button: |
+      **Do you want to add your electronic signature to your forms?**
+      ${word(yesno(e_signature))}
