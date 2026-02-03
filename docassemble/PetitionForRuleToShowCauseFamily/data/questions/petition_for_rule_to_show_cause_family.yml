@@ -15,7 +15,6 @@ objects:
   - other_parties: ALPeopleList.using(complete_attribute=['complete'])
   - other_parties[i].lawyer: ALIndividual
   - children: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True, object_type=ALIndividual)
-  #- child_with_age: ALPeopleList.using(complete_attribute=['complete'] )
   - order_paragraphs: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
   - other_parties[0].jail_delivery_address: ALAddress
 ---
@@ -268,6 +267,7 @@ fields:
       - Order of Protection
       - Other
   - Other case type: other_case_type
+    maxlength: 50
     js show if: |
       val('case_type') === "Other"
 ---
@@ -542,11 +542,11 @@ subquestion: |
   Your *Petition for Rule to Show Cause* form will include information about your case.
 
   % if violation_type == "child":
-  Your form will say how much and how often you are supposed to be paid child support and how much ${other_parties[0].name_full()} owes you. It will also list the names and birthdates of any children.
+  The petition will say how much and how often you are supposed to be paid child support and how much ${other_parties[0].name_full()} owes you.
   % elif violation_type == "maintain":
-  Your form will say how much and how often you are supposed to be paid maintenance and how much ${other_parties[0].name_full()} owes you.  
+  The petition will say how much and how often you are supposed to be paid maintenance and how much ${other_parties[0].name_full()} owes you.  
   % else:
-  Your form will say how ${other_parties[0].name_full()} violated each paragraph of the court order and what you are asking the court to tell ${other_parties[0].name_full()} to do.
+  The petition will say how ${other_parties[0].name_full()} violated the court order and what you are asking the court to tell ${other_parties[0].name_full()} to do.
   % endif
 
   The next screens will ask for information that will go into your petition.
@@ -756,7 +756,7 @@ subquestion: |
   Here's how we figured out this total: ${nice_number(child_support_missed_payment_count,use_word=False)} missed payments of ${currency(child_support_amount)} comes to ${currency(child_support_total_amount)}.
   % endif
   
-  If this is correct, click **Next**. If this is incorrect, you can click **Your petition** to change your earlier answers.
+  If this is correct, click **Next**. If this is incorrect, you can click [**Your petition**](${url_action('section_petition')}) to change your earlier answers.
 ---
 reconsider: True
 code: |
@@ -782,7 +782,7 @@ subquestion: |
   Here's how we figured out this total: ${nice_number(maintenance_missed_payment_count,use_word=False)} missed payments of ${currency(maintenance_amount)} comes to ${currency(missed_maintenance)}.
   % endif
   
-  If this is correct, click **Next**. If this is incorrect, you can click **Your petition** to change your earlier answers.
+  If this is correct, click **Next**. If this is incorrect, you can click [**Your petition**](${url_action('section_petition')}) to change your earlier answers.
 ---
 id: order paragraph
 question: |
@@ -792,7 +792,7 @@ subquestion: |
 
   In the first box, enter the paragraph number of the Order that was violated.
 
-  In the second box, enter the words from that paragraph that explain what ${other_parties[0].name_full()} was supposed to do. For example, if the paragraph says, “Petitioner shall put the marital property up for sale by October 1, 2025,” you should enter “Put the marital property up for sale by October 1, 2025.” The paragraph may or may not have ${other_parties[0].name_full()}’s name or role.
+  In the second box, enter the words from that paragraph that explain what ${other_parties[0].name_full()} was supposed to do. For example, if the paragraph says, "Petitioner shall put the marital property up for sale by October 1, 2025," you should enter "Put the marital property up for sale by October 1, 2025." The paragraph may or may not have ${other_parties[0].name_full()}'s name or role.
 fields:
   - Order paragraph (number or letter): order_paragraphs[i].name.text
     maxlength: 5
@@ -808,15 +808,15 @@ subquestion: |
 
   If ${other_parties[0].name_full()}'s violation cost you money or hurt you in another way, include that here.
  
-  ${collapse_template(order_paragraphs[i].reference)}
+  ${collapse_template(order_paragraphs_reference)}
 fields:
   - ${other_parties[0].name_full()} violated paragraph ${order_paragraphs[i].name.text} by:: order_paragraphs[i].violation
     input type: area
     rows: 6
 ---
-template: order_paragraphs[i].reference
+template: order_paragraphs_reference
 subject: |
-  **Remind me what paragraph ${order_paragraphs[i].name.text} said**
+  **Remind me what paragraph ${order_paragraphs[i].name.text} said ${other_parties[0].name_full()} should do**
 content: |
   ${order_paragraphs[i].requirement}
 ---
@@ -824,7 +824,7 @@ id: order request
 question: |
   What do you want the court to order ${other_parties[0].name_full()} to do?
 subquestion: |
-  ${collapse_template(order_paragraphs[i].reference)}
+  ${collapse_template(order_paragraphs_reference)}
 fields:
   - I ask that the court order that ${other_parties[0].name_full()} do the following:: order_paragraphs[i].order_request
     input type: area
@@ -873,9 +873,9 @@ id: hearing info
 question: |
   Court hearing information
 subquestion: |
-  Enter the date, time, and courtroom information for your citation hearing.
+  Enter the date, time, and courtroom information for your hearing.
 
-  If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${other_parties[0].name_full()}.
+  If you do not know this yet, you can leave these fields blank. You must add this information to the petition before you deliver it to ${other_parties[0].name_full()}.
 fields:
   - Date: hearing_date
     datatype: date
@@ -1217,7 +1217,7 @@ id: e-signature
 question: |
   Do you want to add your e-signature to your *Petition for Rule to Show Cause*?
 subquestion: |
-  This program can put “**/s/ ${users[0].name_full()}**” where you would sign your name. The court will accept this as your signature.
+  This program can put "**/s/ ${users[0].name_full()}**" where you would sign your name. The court will accept this as your signature.
 
   If you do not add your **{e-signature}**, you must sign your paper forms before you file and deliver them.
 
@@ -1252,15 +1252,17 @@ question: |
 subquestion: |
   Before you file your petition, you should attach a copy of the order to the petition. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
 
-  Then, you can file the completed and signed forms to the clerk. You may need to file the forms electronically. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
+  Then, you can file the completed and signed forms with the circuit clerk. You may need to file the forms electronically. Attachments will need to be uploaded as separate documents. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
 
   % if other_parties[0].is_represented:
-  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].lawyer.name_full()}.
+  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()} and their lawyer, ${other_parties[0].lawyer.name_full()}.
   % else:
   Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()}.
   % endif
 
   You will need to attend the hearing on the scheduled day. You should bring copies of your forms, including any exhibits, to the hearing.
+
+  To learn more, read the instructions you can download at the end of this program. 
 ---
 id: forms assembling
 continue button field: forms_assembling
@@ -1619,8 +1621,18 @@ attachment:
     - "calendar": ${calendar}
     - "ivd_number": ${ivd_number}
     - "user_name_1": ${users[0].name_full()}
-    - "petitioner_name_1": ${users[0].name_full() if party_label == "plaintiff" or party_label == "petitioner" else other_parties[0].name_full()}
-    - "respondent_name_1": ${other_parties[0].name_full() if party_label == "plaintiff" or party_label == "petitioner" else users[0].name_full()}
+    - "petitioner_name_1": |
+        % if party_label == "plaintiff" or party_label == "petitioner":
+        ${users[0].name_full()}, 
+        % else:
+        ${other_parties[0].name_full()},
+        % endif
+    - "respondent_name_1": |
+        % if party_label == "plaintiff" or party_label == "petitioner":
+        ${other_parties[0].name_full()},
+        % else:
+        ${users[0].name_full()},       
+        % endif
     - "other_party_name_1": ${other_parties[0].name_full()}
     - "other_party_label_1": ${capitalize(opponent_label)}
     - "other_party_label_2": ${capitalize(opponent_label)}
@@ -1772,7 +1784,7 @@ review:
     button: |
       **Does ${other_parties[0].name_full()} owe a child support arrearage?**
       % if child_support_arrears_check:
-      Yes, they owe ${currency(child_support_arrears_amount)}
+      Yes, they owe ${currency(child_support_arrears_amount)}.
       % else:
       No
       % endif
@@ -1840,9 +1852,9 @@ columns:
       row_item.name_full() if defined("row_item.name.first") else ""
   - Birthdate: |
       row_item.birth if defined("row_item.birth") else ""
-  - Edit: |
-      action_button_html(url_action(row_item.attr_name("review_child")), label="Edit", icon="pencil-alt")
 delete buttons: True
+edit: 
+  - review_child
 confirm: True
 ---
 id: child review screen
@@ -1962,7 +1974,11 @@ review:
   - Edit: other_parties[0].is_represented
     button: |
       **Does ${other_parties[0].name_full()} have a lawyer?**
+      % if other_parties[0].is_represented == None:
+      I don't know
+      % else:
       ${word(yesno(other_parties[0].is_represented))}
+      % endif
   - Edit: other_parties[0].lawyer.name.first
     button: |
       **${other_parties[0].name_full()}'s lawyer:**
@@ -2264,7 +2280,11 @@ review:
   - Edit: other_parties[0].is_represented
     button: |
       **Does ${other_parties[0].name_full()} have a lawyer?**
+      % if other_parties[0].is_represented == None:
+      I don't know
+      % else:
       ${word(yesno(other_parties[0].is_represented))}
+      % endif
   - Edit: other_parties[0].lawyer.name.first
     button: |
       **${other_parties[0].name_full()}'s lawyer:**
