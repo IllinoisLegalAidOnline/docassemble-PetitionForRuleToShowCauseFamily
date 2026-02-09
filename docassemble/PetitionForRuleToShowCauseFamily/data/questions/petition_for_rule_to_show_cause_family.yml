@@ -917,7 +917,7 @@ subject: |
 content: |  
   You can put information on how to attend court on the bottom of page 1 of your *Notice of Court Date for Motion*.
 
-  We will add the courtroom address to your forms. To get the other information, contact your Circuit Clerk. You can look up how to contact them using [**Find Your Court**](https://www.illinoiscourts.gov/courts-directory/interactive-map/by-court-type/) on the Illinois Courts website.
+  We will add the courtroom address to your forms. To get the other information, contact your Circuit Clerk. You can look up how to contact them using [**Find Your Court**](https://www.illinoiscourts.gov/courts-directory/interactive-map/by-court-type) on the Illinois Courts website.
   
   [FILE hearing_information.png, 100%, Part of Notice of Court Date for Motion form]
 ---
@@ -1334,7 +1334,7 @@ objects:
   - petition_bundle: ALDocumentBundle.using(elements=[petition, proof_of_delivery], filename="petition_for_rule_to_show_cause.pdf", title="Petition for Rule to Show Cause", enabled=True)
 ---
 objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, petition_bundle, notice, order], filename="petition_for_rule_to_show_cause.pdf", title="Download all forms")
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, petition_bundle, notice, order], filename="petition_for_rule_to_show_cause.pdf", title="All forms")
 ---
 attachment:
   variable name: instructions[i]
@@ -1605,55 +1605,61 @@ attachment:
   docx template file: word_petition_rule_family.docx
 ---
 attachment:
-  variable name: order[i]
   name: order
+  variable name: order[i]
   filename: order
-  skip undefined: True
-  editable: False
-  pdf template file: order_rule_family.pdf
-  fields:
-    - "county_all_caps": ${trial_court.address.county.upper()}
-    - "in_re": |
-        % if in_re_check:
-        In re: ${in_re_label}
-        % endif
-    - "case_number": ${case_number}
-    - "calendar": ${calendar}
-    - "ivd_number": ${ivd_number}
-    - "user_name_1": ${users[0].name_full()}
-    - "petitioner_name_1": |
-        % if party_label == "plaintiff" or party_label == "petitioner":
-        ${users[0].name_full()}, 
-        % else:
-        ${other_parties[0].name_full()},
-        % endif
-    - "respondent_name_1": |
-        % if party_label == "plaintiff" or party_label == "petitioner":
-        ${other_parties[0].name_full()},
-        % else:
-        ${users[0].name_full()},       
-        % endif
-    - "other_party_name_1": ${other_parties[0].name_full()}
-    - "other_party_label_1": ${capitalize(opponent_label)}
-    - "other_party_label_2": ${capitalize(opponent_label)}
-    - "other_party_label_3": ${capitalize(opponent_label)}
-    #- "order_failure_description": |
-    #    % if violation_type == "child":
-    #    pay child support and any other child related expenses
-    #    % elif violation_type == "maintain":
-    #    pay maintenance and any other spousal support related expenses
-    #    % elif order_paragraphs.number_gathered() == 1:
-    #    ${order_paragraphs[0].order_request}
-    #    elif order_paragraphs.number_gathered() == 2:
-    #    ${order_paragraphs[0].order_request} and ${order_paragraphs[1].order_request}
-    #    elif order_paragraphs.number_gathered() == 3:
-    #    ${order_paragraphs[0].order_request}, ${order_paragraphs[1].order_request}, and ${order_paragraphs[2].order_request}
-    #    % endif
-    #- "require_date": ${final_order_date}
-    - "user_street": ${users[0].address.line_one(bare=True)}
-    - "user_csz": ${users[0].address.line_two()}
-    - "user_phone": ${phone_number_formatted(users[0].phone_number)}
-    - "user_email": ${users[0].email if users[0].has_email_address else ""}
+  docx template file: order_rule_family.docx
+---
+#attachment:
+#  variable name: order[i]
+#  name: order
+#  filename: order
+#  skip undefined: True
+#  editable: False
+#  pdf template file: order_rule_family.pdf
+#  fields:
+#    - "county_all_caps": ${trial_court.address.county.upper()}
+#    - "in_re": |
+#        % if in_re_check:
+#        In re: ${in_re_label}
+#        % endif
+#    - "case_number": ${case_number}
+#    - "calendar": ${calendar}
+#    - "ivd_number": ${ivd_number}
+#    - "user_name_1": ${users[0].name_full()}
+#    - "petitioner_name_1": |
+#        % if party_label == "plaintiff" or party_label == "petitioner":
+#        ${users[0].name_full()}, 
+#        % else:
+#        ${other_parties[0].name_full()},
+#        % endif
+#    - "respondent_name_1": |
+#        % if party_label == "plaintiff" or party_label == "petitioner":
+#        ${other_parties[0].name_full()},
+#        % else:
+#        ${users[0].name_full()},       
+#        % endif
+#    - "other_party_name_1": ${other_parties[0].name_full()}
+#    - "other_party_label_1": ${capitalize(opponent_label)}
+#    - "other_party_label_2": ${capitalize(opponent_label)}
+#    - "other_party_label_3": ${capitalize(opponent_label)}
+#    #- "order_failure_description": |
+#    #    % if violation_type == "child":
+#    #    pay child support and any other child related expenses
+#    #    % elif violation_type == "maintain":
+#    #    pay maintenance and any other spousal support related expenses
+#    #    % elif order_paragraphs.number_gathered() == 1:
+#    #    ${order_paragraphs[0].order_request}
+#    #    elif order_paragraphs.number_gathered() == 2:
+#    #    ${order_paragraphs[0].order_request} and ${order_paragraphs[1].order_request}
+#    #    elif order_paragraphs.number_gathered() == 3:
+#    #    ${order_paragraphs[0].order_request}, ${order_paragraphs[1].order_request}, and ${order_paragraphs[2].order_request}
+#    #    % endif
+#    #- "require_date": ${final_order_date}
+#    - "user_street": ${users[0].address.line_one(bare=True)}
+#    - "user_csz": ${users[0].address.line_two()}
+#    - "user_phone": ${phone_number_formatted(users[0].phone_number)}
+#    - "user_email": ${users[0].email if users[0].has_email_address else ""}
 ---
 id: case info review screen
 event: section_case_info
@@ -1821,7 +1827,7 @@ review:
     button: |
       **Does ${other_parties[0].name_full()} owe a maintenance arrearage?**
       % if maintenance_arrears_check:
-      Yes, they owe ${currency(maintenance_arrears_amount)}
+      Yes, they owe ${currency(maintenance_arrears_amount)}.
       % else:
       No
       % endif
@@ -1904,8 +1910,8 @@ subquestion: |
 review: 
   - Edit: x.name.text
     button: |
-      **Paragraph number:**
-      ${x.name.text}
+      **Paragraph number ${x.name.text} ordered ${other_parties[0].name_full()} to:**
+      ${x.requirement}
   - Edit: x.violation
     button: |
       **How did ${other_parties[0].name_full()} violate this paragraph?**
@@ -2177,7 +2183,7 @@ review:
     button: |
       **Does ${other_parties[0].name_full()} owe a child support arrearage?**
       % if child_support_arrears_check:
-      Yes, they owe ${currency(child_support_arrears_amount)}
+      Yes, they owe ${currency(child_support_arrears_amount)}.
       % else:
       No
       % endif
@@ -2214,7 +2220,7 @@ review:
     button: |
       **Does ${other_parties[0].name_full()} owe a maintenance arrearage?**
       % if maintenance_arrears_check:
-      Yes, they owe ${currency(maintenance_arrears_amount)}
+      Yes, they owe ${currency(maintenance_arrears_amount)}.
       % else:
       No
       % endif
