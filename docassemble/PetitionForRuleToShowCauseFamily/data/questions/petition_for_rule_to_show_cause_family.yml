@@ -294,6 +294,10 @@ fields:
 id: type of violation
 question: |
   How did the other party not follow the court order?
+subquestion : |
+  % if case_type == "Order of Protection":
+  For more information on making someone follow an Order of Protection, read ILAO's article on [**Enforcing a domestic violence Order of Protection**](https://www.illinoislegalaid.org/node/185836).
+  % endif
 fields: 
   - no label: violation_type
     input type: radio
@@ -309,7 +313,7 @@ question: |
 subquestion: |
   Before making a petition to ask the court to enforce a child support order, you may want to contact the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents.html). HFS may be able to help you get your child support payments.
 
-  This program can make a petition to ask the court for to enforce a child support order, but filing a petition on your own can be harder than getting help from HFS.
+  This program can make a petition to ask the court for to enforce a child support order, but filing a petition on your own can be harder than getting help from HFS. To learn more, read ILAO's article on [**Enforcing child support basics**](https://www.illinoislegalaid.org/node/183981).
 
   If there are visitation issues or the children are living with someone other than you, it may affect child support payments. You may want to ask a lawyer for advice. Use [**Get Legal Help**](https://www.illinoislegalaid.org/get-legal-help) to find free or low-cost legal services in your area.
 ---
