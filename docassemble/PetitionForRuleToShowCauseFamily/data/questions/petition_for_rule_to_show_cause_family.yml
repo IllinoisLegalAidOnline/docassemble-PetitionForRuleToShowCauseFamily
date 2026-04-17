@@ -90,8 +90,8 @@ code: |
   willful_info
 
   nav.set_section('section_delivery')
-  #if has_court_date:
-  #    hearing_date
+  if has_court_date:
+      hearing_date
   if other_parties[0].is_represented:
     other_parties[0].lawyer.name.first
   other_parties[0].address.address
@@ -238,6 +238,7 @@ question: |
 subquestion: |
   When someone does not follow a court order from a family law case you were in, you have a few options:
 
+  * You can go into **{mediation}**. If you are in Cook County, you may be able to go to the [**Center for Conflict Resolution**](https://www.ccrchicago.org/).
   * If you need help collecting child support, you can ask the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents/apply.html) for help.
   * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
 
@@ -675,25 +676,25 @@ id: child support last payment date
 question: |
   When did ${other_parties[0].name_full()} last pay child support?
 fields:
+  - ${other_parties[0].name_full()} has not paid the child support required by the ${child_support_order_date} order.: child_support_never_paid
+    datatype: yesnowide
   - Date: child_support_last_payment_date
     alMax: ${today().format("yyyy-MM-dd")}
     alMin: ${child_support_order_date}
     datatype: ThreePartsDate
     hide if: child_support_never_paid
-  - ${other_parties[0].name_full()} has never paid child support.: child_support_never_paid
-    datatype: yesno
 ---
 id: maintenance last payment date
 question: |
   When did ${other_parties[0].name_full()} last pay maintenance?
 fields:
+  - ${other_parties[0].name_full()} has not paid the maintenance required by the ${maintenance_order_date} order.: maintenance_never_paid
+    datatype: yesnowide
   - Date: maintenance_last_payment_date
     alMax: ${today().format("yyyy-MM-dd")}
     alMin: ${maintenance_order_date}
     datatype: ThreePartsDate
     hide if: maintenance_never_paid
-  - ${other_parties[0].name_full()} has never paid maintennce.: maintenance_never_paid
-    datatype: yesno
 ---
 id: child support missed payment count
 question: |
@@ -871,9 +872,9 @@ id: hearing scheduled
 question: |
   Do you already have a court date scheduled for this petition?
 subquestion: |
-  In some counties, the circuit clerk can give you a hearing date before you file your petition. In other counties, you will get a hearing date when you file your motion. If you have this information now, you can add it to your forms.
+  In some counties, the circuit clerk can give you a court date before you file your petition. In other counties, you will get a court date when you file your motion. If you have this information now, you can add it to your forms.
   
-  If the clerk gives you the hearing date after you file your petition, you can add it to your *Notice of Court Date for Motion* form later. 
+  If the clerk gives you the court date after you file your petition, you can add it to your *Notice of Court Date for Motion* form later. 
   
   **Note:** You must add this information to your *Notice of Court Date for Motion* before you deliver it to ${other_parties[0].name_full()}.
 fields:
@@ -884,7 +885,7 @@ id: hearing info
 question: |
   Court hearing information
 subquestion: |
-  Enter the date, time, and courtroom information for your hearing.
+  Enter the date, time, and courtroom information for your court date.
 
   If you do not know this yet, you can leave these fields blank. You must add this information to the petition before you deliver it to ${other_parties[0].name_full()}.
 fields:
@@ -924,7 +925,7 @@ fields:
 ---
 template: hearing_info_help
 subject: |
-  **See where to put hearing information on your forms**
+  **See where to put court date information on your forms**
 content: |  
   You can put information on how to attend court on the bottom of page 1 of your *Notice of Court Date for Motion*.
 
@@ -1266,12 +1267,12 @@ subquestion: |
   Then, you can file the completed and signed forms with the circuit clerk. You may need to file the forms electronically. Attachments will need to be uploaded as separate documents. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
 
   % if other_parties[0].is_represented:
-  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()} and their lawyer, ${other_parties[0].lawyer.name_full()}.
+  Next, once the clerk has scheduled a court date, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()} and their lawyer, ${other_parties[0].lawyer.name_full()}.
   % else:
-  Next, once the clerk has scheduled a hearing, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()}.
+  Next, once the clerk has scheduled a court date, you will need to deliver copies of your forms, including any exhibits, to ${other_parties[0].name_full()}.
   % endif
 
-  You will need to attend the hearing on the scheduled day. You should bring copies of your forms, including any exhibits, to the hearing.
+  You will need to attend the court date on the scheduled day. You should bring copies of your forms, including any exhibits, to court.
 
   To learn more, read the instructions you can download at the end of this program. 
 ---
@@ -1787,7 +1788,7 @@ review:
     button: |
       **When did ${other_parties[0].name_full()} last pay child support?**
       % if child_support_never_paid:
-      They have never paid child support.
+      They have not paid the ordered child support.
       % else:
       ${child_support_last_payment_date}
       % endif
@@ -1828,7 +1829,7 @@ review:
     button: |
       **When did ${other_parties[0].name_full()} last pay maintenance?**
       % if maintenance_never_paid:
-      They have never paid maintenance.
+      They have not paid the ordered maintenance.
       % else:
       ${maintenance_last_payment_date}
       % endif
@@ -1949,7 +1950,7 @@ review:
       ${word(yesno(has_court_date))}
   - Edit: hearing_date
     button: |
-      **Hearing information:**
+      **Court date information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
@@ -2187,7 +2188,7 @@ review:
     button: |
       **When did ${other_parties[0].name_full()} last pay child support?**
       % if child_support_never_paid:
-      They have never paid child support.
+      They have not paid the ordered child support.
       % else:
       ${child_support_last_payment_date}
       % endif
@@ -2227,7 +2228,7 @@ review:
     button: |
       **When did ${other_parties[0].name_full()} last pay maintenance?**
       % if maintenance_never_paid:
-      They have never paid maintenance.
+      They have not paid the ordered maintenance.
       % else:
       ${maintenance_last_payment_date}
       % endif
@@ -2262,7 +2263,7 @@ review:
       ${word(yesno(has_court_date))}
   - Edit: hearing_date
     button: |
-      **Hearing information:**
+      **Court date information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
