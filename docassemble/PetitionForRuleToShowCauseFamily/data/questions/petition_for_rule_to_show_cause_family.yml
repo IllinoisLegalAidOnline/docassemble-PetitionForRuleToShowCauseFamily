@@ -16,8 +16,7 @@ objects:
   - other_parties[i].lawyer: ALIndividual
   - children: ALPeopleList.using(complete_attribute=['complete'], there_are_any=True, object_type=ALIndividual)
   - order_paragraphs: DAList.using(object_type=Thing, complete_attribute='complete', there_are_any=True)
-  - other_parties[0].jail_delivery_address: ALAddress
-  - delivery_parties: ALPeopleList.using(there_are_any=True)  
+  - other_parties[0].jail_delivery_address: ALAddress 
   - other_parties[0].lawyer.jail_delivery_address: ALAddress
 ---
 modules:
@@ -94,14 +93,15 @@ code: |
   nav.set_section('section_delivery')
   if has_court_date:
       hearing_date
+  other_parties[0].address.address
+  if other_parties[0].knows_delivery_method:
+    other_parties[0].email_delivery
+    other_parties[0].delivery_date
   if other_parties[0].is_represented:
     other_parties[0].lawyer.name.first
-  other_parties[0].address.address
-  build_delivery_parties
-  for party in delivery_parties:
-    if party.knows_delivery_method:
-      party.email_delivery
-      party.delivery_date
+    if other_parties[0].lawyer.knows_delivery_method:
+      other_parties[0].lawyer.email_delivery
+      other_parties[0].lawyer.delivery_date
   hand_delivery_info 
 
   nav.set_section('section_user')
@@ -519,11 +519,7 @@ fields:
 ---
 id: other party address
 question: |
-  % if other_parties[0].is_represented:
-  What is ${other_parties[0].lawyer.name_full()}'s address?
-  % else:
   What is ${other_parties[0].name_full()}'s address?
-  % endif
 fields:
   - Street address: other_parties[0].address.address
     address autocomplete: True
@@ -936,16 +932,6 @@ content: |
   We will add the courtroom address to your forms. To get the other information, contact your Circuit Clerk. You can look up how to contact them using [**Find Your Court**](https://www.illinoiscourts.gov/courts-directory/interactive-map/by-court-type) on the Illinois Courts website.
   
   [FILE hearing_information.png, 100%, Part of Notice of Court Date for Motion form]
----
-reconsider: True
-code: |
-    temp_list = []
-    temp_list.append(other_parties[0])
-    if other_parties[0].is_represented:
-      temp_list.append(other_parties[0].lawyer)
-
-    delivery_parties = ALPeopleList("delivery_parties", elements = temp_list )
-    build_delivery_parties = True
 ---
 id: knows delivery method
 generic object: ALIndividual
@@ -1614,11 +1600,7 @@ attachment:
         
       - "document_name": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
-          % if other_parties[0].is_represented:
-          ${ other_parties[0].lawyer.name_full() } (lawyer for ${ other_parties[0].name_full() })
-          % else:
           ${ other_parties[0].name_full() }
-          % endif
       - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) }
       - "delivery_party1_email": ${ other_parties[0].delivery_email if other_parties[0].knows_delivery_method else '' }
       - "delivery_party1_email_efsp": ${ other_parties[0].delivery_efsp_email if other_parties[0].knows_delivery_method else '' }
@@ -1663,7 +1645,7 @@ attachment:
           % else:
           ${""}
           % endif
-      - "is_additional_proof_delivery_yes": ${ other_parties.number() > 1 }
+      - "is_additional_proof_delivery_yes": ${ other_parties[0].is_represented }
       - "hearing_date": ${hearing_date if has_court_date else ""}
       - "hearing_time": ${format_time(hearing_time, format='h:mm') if has_court_date and hearing_time != "" else ""}
       - "hearing_am_checkbox": ${True if has_court_date and format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
