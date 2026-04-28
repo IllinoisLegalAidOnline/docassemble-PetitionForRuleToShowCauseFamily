@@ -883,7 +883,7 @@ fields:
 ---
 id: hearing info
 question: |
-  Court hearing information
+  Court date information
 subquestion: |
   Enter the date, time, and courtroom information for your court date.
 
@@ -896,7 +896,7 @@ fields:
   - Time: hearing_time
     datatype: time
     required: False
-  - Hearing type: hearing_type
+  - Court date type: hearing_type
     datatype: checkboxes
     required: False
     none of the above: False
@@ -1328,18 +1328,22 @@ code: |
   instructions.enabled = True
   proof_of_delivery.enabled = True
   proof_of_delivery_lawyer.enabled = False
+  proof_of_delivery_lawyer_editable.enabled = False
   notice.enabled = True
   order.enabled = True
   petition_bundle.enabled = True
   proof_bundle.enabled = True
+  notice_bundle.enabled = True
   if other_parties[0].is_represented:
     proof_of_delivery_lawyer.enabled = True
+    proof_of_delivery_lawyer_editable.enabled = True
 ---
 objects:
   - petition: ALDocument.using(title="Petition for Rule to Show Cause", filename="petition", has_addendum=False)
   - instructions: ALDocument.using(title="Instructions", filename="instructions", has_addendum=False)
   - proof_of_delivery: ALDocument.using(title="Proof of Delivery", filename="proof_of_delivery", has_addendum=False)
   - proof_of_delivery_lawyer: ALDocument.using(title="Proof of Delivery", filename="proof_of_delivery", has_addendum=False)
+  - proof_of_delivery_lawyer_editable: ALDocument.using(title="Proof of Delivery", filename="proof_of_delivery", has_addendum=False)
   - notice: ALDocument.using(title="Notice of Court Date", filename="notice", has_addendum=False)
   - order: ALDocument.using(title="Order on Rule to Show Cause", filename="order", has_addendum=False)
 ---
@@ -1348,9 +1352,10 @@ objects:
 ---
 objects:
   - petition_bundle: ALDocumentBundle.using(elements=[petition, proof_bundle], filename="petition_for_rule_to_show_cause.pdf", title="Petition for Rule to Show Cause")
+  - notice_bundle: ALDocumentBundle.using(elements=[notice, proof_of_delivery_lawyer_editable], filename="notice_of_court_date.pdf", title="Notice of Court Date")
 ---
 objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, petition_bundle, notice, order], filename="petition_for_rule_to_show_cause.pdf", title="All forms")
+  - al_user_bundle: ALDocumentBundle.using(elements=[instructions, petition_bundle, notice_bundle, order], filename="petition_for_rule_to_show_cause.pdf", title="All forms")
 ---
 attachment:
   variable name: instructions[i]
@@ -1404,7 +1409,7 @@ attachment:
       - "document_name": ${"Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
           ${ other_parties[0].name_full() }
-      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) }
+      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else "" }
       - "delivery_party1_email": ${ other_parties[0].delivery_email if other_parties[0].knows_delivery_method else '' }
       - "delivery_party1_email_efsp": ${ other_parties[0].delivery_efsp_email if other_parties[0].knows_delivery_method else '' }
       - "is_delivery_party1_hand_yes": ${ other_parties[0].hand_delivery if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
@@ -1495,7 +1500,98 @@ attachment:
       - "document_name": ${"Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
           ${ other_parties[0].lawyer.name_full() } (lawyer for ${ other_parties[0].name_full() })
-      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].lawyer.address.on_one_line(bare=True) }
+      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].lawyer.address.on_one_line(bare=True) if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else ''}
+      - "delivery_party1_email": ${ other_parties[0].lawyer.delivery_email if other_parties[0].lawyer.knows_delivery_method else '' }
+      - "delivery_party1_email_efsp": ${ other_parties[0].lawyer.delivery_efsp_email if other_parties[0].lawyer.knows_delivery_method else '' }
+      - "is_delivery_party1_hand_yes": ${ other_parties[0].lawyer.hand_delivery if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else '' }
+      - "is_delivery_party1_mail_yes": ${ other_parties[0].lawyer.mail_delivery if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else '' }
+      - "is_delivery_party1_efm_yes": ${ other_parties[0].lawyer.efm_delivery if other_parties[0].lawyer.knows_delivery_method else '' }
+      - "is_delivery_party1_email_yes": ${ other_parties[0].lawyer.email_delivery if other_parties[0].lawyer.knows_delivery_method else '' }
+      - "delivery_party1_date": ${ other_parties[0].lawyer.delivery_date if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.knows_delivery_date else '' }
+      - "delivery_party1_time": ${ format_time(other_parties[0].lawyer.delivery_time, format='h:mm a') if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.knows_delivery_time else '' }
+      
+      - "is_delivery_party1_not_electronic": ${ True if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else '' }
+      - "delivery_party1_mail_location": |
+          % if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery and other_parties[0].lawyer.mail_delivery:
+          % if other_parties[0].lawyer.delivery_mail_address != "" and other_parties[0].lawyer.delivery_mail_city != "" and other_parties[0].lawyer.delivery_mail_state != "":
+          ${other_parties[0].lawyer.delivery_mail_address }, ${other_parties[0].lawyer.delivery_mail_city}, ${ state_name(other_parties[0].lawyer.delivery_mail_state) }
+          % elif other_parties[0].lawyer.delivery_mail_address != "" and other_parties[0].lawyer.delivery_mail_city != "":
+          ${other_parties[0].lawyer.delivery_mail_address }, ${other_parties[0].lawyer.delivery_mail_city}
+          % elif other_parties[0].lawyer.delivery_mail_address != "" and other_parties[0].lawyer.delivery_mail_state != "":
+          ${other_parties[0].lawyer.delivery_mail_address }, ${ state_name(other_parties[0].lawyer.delivery_mail_state) }
+          % elif other_parties[0].lawyer.delivery_mail_city != "" and other_parties[0].lawyer.delivery_mail_state != "":
+          ${other_parties[0].lawyer.delivery_mail_city}, ${ state_name(other_parties[0].lawyer.delivery_mail_state) }
+          % elif other_parties[0].lawyer.delivery_mail_address != "":
+          ${other_parties[0].lawyer.delivery_mail_address}
+          % elif other_parties[0].lawyer.delivery_mail_city != "":
+          ${other_parties[0].lawyer.delivery_mail_city}
+          % else:
+          ${state_name(other_parties[0].lawyer.delivery_mail_state)}
+          % endif
+          % else:
+          ${ "" }
+          % endif
+      - "is_delivery_party1_jail_yes": ${ True if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery and other_parties[0].lawyer.jail_delivery else '' }
+      - "delivery_party1_jail_name": |
+          % if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery and other_parties[0].lawyer.jail_delivery:
+          % if other_parties[0].lawyer.delivery_jail_name != "" and other_parties[0].lawyer.jail_delivery_address.address != "" and other_parties[0].lawyer.jail_delivery_address.city != "" and other_parties[0].lawyer.jail_delivery_address.state != "":
+          ${ other_parties[0].lawyer.delivery_jail_name }, ${ other_parties[0].lawyer.jail_delivery_address.on_one_line(bare=True)}
+          % elif other_parties[0].lawyer.delivery_jail_name == "":
+          ${ other_parties[0].lawyer.jail_delivery_address.on_one_line(bare=True)}
+          % else:
+          ${ other_parties[0].lawyer.delivery_jail_name }
+          % endif
+          % else:
+          ${""}
+          % endif    
+---
+attachment:
+  variable name: proof_of_delivery_lawyer_editable[i]
+  name: proof_of_delivery_lawyer_editable
+  filename: proof_of_delivery_lawyer_editable
+  skip undefined: True
+  editable: True
+  pdf template file: aoic_proof_of_delivery.pdf
+  fields:
+      - "trial_court_county": ${trial_court.address.county}
+      - "plaintiffs": |
+          % if in_re_check:
+          ${ in_re_label }
+          % else:
+          % if party_label == 'plaintiff' or party_label == "petitioner":
+          % if users.number_gathered() > 1:
+          ${ users[0].name_full() }, et al.
+          % else:
+          ${ users[0].name_full() }
+          % endif
+          % else:
+          % if other_parties.number_gathered() > 1:
+          ${ other_parties[0].name_full() }, et al.
+          % else:
+          ${ other_parties[0].name_full() }
+          % endif
+          % endif
+          % endif     
+      - "defendant_list": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${ other_parties[0].name_full() } 
+          % else:
+          ${ users[0].name_full() }
+          % endif
+      - "user__1": ${ users[0].name_full() }
+      - "user__2": ${ users[0].name_full() }
+      - "user_mail_address_one_line__1": ${ users[0].address.on_one_line(bare=True) }
+      - "user_phone_number__1": ${ phone_number_formatted(users[0].phone_number) }
+      - "user_email": ${ users[0].email if users[0].has_email_address else '' }
+      - "case_number__1": ${ case_number }
+      - "case_number__2": ${ case_number }
+      
+      - "e_sign_name__1": ${ users[0].name_full() if e_signature else '' }
+      - "for_self": ${True}
+      - "document_name": ${"Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
+      - "delivery_party1_name_full": | 
+          ${ other_parties[0].lawyer.name_full() } (lawyer for ${ other_parties[0].name_full() })
+      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].lawyer.address.on_one_line(bare=True) if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else ''}
       - "delivery_party1_email": ${ other_parties[0].lawyer.delivery_email if other_parties[0].lawyer.knows_delivery_method else '' }
       - "delivery_party1_email_efsp": ${ other_parties[0].lawyer.delivery_efsp_email if other_parties[0].lawyer.knows_delivery_method else '' }
       - "is_delivery_party1_hand_yes": ${ other_parties[0].lawyer.hand_delivery if other_parties[0].lawyer.knows_delivery_method and other_parties[0].lawyer.physical_delivery else '' }
@@ -1601,7 +1697,7 @@ attachment:
       - "document_name": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
           ${ other_parties[0].name_full() }
-      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) }
+      - "delivery_party1_mail_address_on_one_line": ${ other_parties[0].address.on_one_line(bare=True) if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
       - "delivery_party1_email": ${ other_parties[0].delivery_email if other_parties[0].knows_delivery_method else '' }
       - "delivery_party1_email_efsp": ${ other_parties[0].delivery_efsp_email if other_parties[0].knows_delivery_method else '' }
       - "is_delivery_party1_hand_yes": ${ other_parties[0].hand_delivery if other_parties[0].knows_delivery_method and other_parties[0].physical_delivery else '' }
