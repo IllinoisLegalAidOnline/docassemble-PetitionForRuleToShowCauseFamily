@@ -174,7 +174,8 @@ code: |
   stuff_to_snapshot['user_zip'] = showifdef('users[0].address.zip')
 
   stuff_to_snapshot['downloaded_forms'] = showifdef('forms_assembling')
-  
+
+  stuff_to_snapshot['case_type'] = showifdef('case_type')
   
   if defined('violation_type'):
     if violation_type == "child":
@@ -246,6 +247,8 @@ subquestion: |
   * If you need help collecting child support, you can ask the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents/apply.html) for help.
   * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will ask the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
 
+  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
+  
   **Note:** There are additional ways to make someone follow an Order of Protection. See ILAO's article on [**Enforcing a domestic violence Order of Protection**](https://www.illinoislegalaid.org/node/185836).
 terms:
   - "contempt of court": |
@@ -462,6 +465,8 @@ subquestion: |
   If the court entered a final Order or Judgment, your case is completed.
 
   If the court has not entered such an Order, your case is still ongoing, or "pending." You likely have another court date scheduled.
+
+  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
 fields: 
   - no label: case_completed
     input type: radio
@@ -1252,7 +1257,7 @@ continue button field: next_steps
 question: |
   Next steps
 subquestion: |
-  Before you file your petition, you should attach a copy of the order to the petition. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
+  Before you file your petition, **you should attach a copy of the order that was violated to the petition**. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
 
   Then, you can file the completed and signed forms with the circuit clerk. You may need to file the forms electronically. Attachments will need to be uploaded as separate documents. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
 
