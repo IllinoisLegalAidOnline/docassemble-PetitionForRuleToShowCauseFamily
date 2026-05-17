@@ -628,6 +628,8 @@ question: |
   When did the court order child support payments?
 subquestion: |
   This date should be on the order.
+
+  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
 fields:
   - Date: child_support_order_date
     alMin: ${filing_date}
@@ -641,6 +643,8 @@ subquestion: |
   Maintenance is also known as "spousal support" or "alimony."
   
   This date should be on the order.
+
+  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
 fields:
   - Date: maintenance_order_date
     alMin: ${filing_date}
@@ -1257,7 +1261,7 @@ continue button field: next_steps
 question: |
   Next steps
 subquestion: |
-  Before you file your petition, **you should attach a copy of the order that was violated to the petition**. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
+  Before you file your petition, you should **attach a copy of the order that was violated to the petition**. Mark the order as "Exhibit A." You can also attach copies of any documents that show how the other person violated the order. Mark these documents as "Exhibit B," "Exhibit C," etc.
 
   Then, you can file the completed and signed forms with the circuit clerk. You may need to file the forms electronically. Attachments will need to be uploaded as separate documents. To learn more, read ILAO's article on [**E-filing basics**](https://www.illinoislegalaid.org/node/109496).
 
