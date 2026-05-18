@@ -466,7 +466,7 @@ subquestion: |
 
   If the court has not entered such an Order, your case is still ongoing, or "pending." You likely have another court date scheduled.
 
-  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
+  You may want to wait at least 30 days after the date of the court order before filing your petition. This will make it easier to enforce the court order.
 fields: 
   - no label: case_completed
     input type: radio
@@ -629,7 +629,7 @@ question: |
 subquestion: |
   This date should be on the order.
 
-  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
+  You may want to wait at least 30 days after the date of the court order before filing your petition. This will make it easier to enforce the court order.
 fields:
   - Date: child_support_order_date
     alMin: ${filing_date}
@@ -644,7 +644,7 @@ subquestion: |
   
   This date should be on the order.
 
-  You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
+  You may want to wait at least 30 days after the date of the court order before filing your petition. This will make it easier to enforce the court order.
 fields:
   - Date: maintenance_order_date
     alMin: ${filing_date}
