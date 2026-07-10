@@ -1,7 +1,7 @@
 metadata:
   title: Petition for Rule to Show Cause - Family Law
   short title: Petition - Rule to Show Cause
-  comment: This Easy Form helps you make forms to help enforce an earlier court order from a family law case.
+  comment: This Easy Form helps you make forms to enforce an earlier court order from a family law case.
   authors:
     - Vivian McNaughton
 ---
@@ -204,7 +204,7 @@ question: |
 subquestion: |
   Welcome to Illinois Legal Aid Online's **Petition for rule to show cause - Family law** Easy Form.
 
-  This program makes the forms to enforce an earlier court order in family or domestic relations court.
+  This program makes the forms to help enforce an earlier court order in family or domestic relations court.
   
   The forms can only be used in Illinois.
 field: sees_nav_bar
@@ -260,7 +260,7 @@ id: case type
 question: |
   What type of case was the order from?
 subquestion: |
-  You may be able to find this on the top of the first page of your court order. It could say something like, "In Re: The Marriage of:" or "In Re: The Parentage of:"
+  You may be able to find this at the top of the first page of your court order. It could say something like, "In re: The Marriage of:" or "In re: The Parentage of:"
 fields:
   - Case type: case_type
     input type: radio
@@ -462,9 +462,9 @@ question: |
   Has the ${case_type} case been completed?
   % endif
 subquestion: |
-  If the court entered a final Order or Judgment, your case is completed.
+  If the court entered a final order or judgment, your case is completed.
 
-  If the court has not entered such an Order, your case is still ongoing, or "pending." You likely have another court date scheduled.
+  If the court has not entered such an order, your case is still ongoing, or "pending." You likely have another court date scheduled.
 
   You may want to wait at least 30 days after the date of the court order before filing your petition. This will make it easier to enforce the court order.
 fields: 
@@ -473,13 +473,13 @@ fields:
     choices: 
       - Yes, the case is complete.: True
       - No, the case is still ongoing (pending).: False
-  - Date of the final Order or Judgment: final_order_date
+  - Date of the final order or judgment: final_order_date
     datatype: ThreePartsDate
     alMin: ${filing_date}
     alMax: ${ today().format("yyyy-MM-dd") }
     show if: case_completed
     help: |
-      The Order or Judgment should be dated by the judge or stamped by the court clerk. This might be on the first page or on the last page near the judge's signature.
+      The order or judgment should be dated by the judge or stamped by the court clerk. This might be on the first page or on the last page near the judge's signature.
 ---
 sets:
   - other_parties[i].name.first
@@ -494,7 +494,7 @@ question: |
   What is the name of the other party in the ${case_type} case?
   % endif
 subquestion: |
-  Their name should be on the top of the order or judgment.
+  Their name should be at the top of the order or judgment.
 fields:
   - code: |
       other_parties[i].name_fields()
@@ -513,7 +513,7 @@ choices:
 id: add lawyer
 generic object: ALIndividual
 question: |
-  Who is  ${ x.name_full() }'s lawyer?
+  Who is ${ x.name_full() }'s lawyer?
 fields:
   - First name: x.lawyer.name.first
   - Middle name: x.lawyer.name.middle
@@ -538,15 +538,6 @@ fields:
       states_list() 
   - ZIP code: other_parties[0].address.zip
 ---
-id: other party email
-question: |
-  Does ${other_parties[0].name_full()} have an email address?
-fields:
-  - no label: other_parties[0].has_email
-    datatype: yesnomaybe
-  - What is their email address?: other_parties[0].email_address
-    show if: other_parties[0].has_email
----
 id: petition info
 continue button field: petition_info
 question: |
@@ -570,7 +561,7 @@ id: child name
 question: |
   What is the name of the ${ordinal(i)} child in the support order?
 fields:
-  code:
+  code: |
     children[i].name_fields()
 ---
 id: child birth
@@ -776,7 +767,7 @@ subquestion: |
   * ${currency(child_support_arrears_amount)} in previously ordered past due support (arrears).
   * When added together, the missed payments and the past due support total ${currency(child_support_total_amount)}.
   % else:
-  Here's how we figured out this total: ${nice_number(child_support_missed_payment_count,use_word=False)} missed payments of ${currency(child_support_amount)} comes to ${currency(child_support_total_amount)}.
+  Here's how we figured out this total: ${nice_number(child_support_missed_payment_count,use_word=False)} missed payments of ${currency(child_support_amount)} come to ${currency(child_support_total_amount)}.
   % endif
   
   If this is correct, click **Next**. If this is incorrect, you can click [**Your petition**](${url_action('section_petition')}) to change your earlier answers.
@@ -802,7 +793,7 @@ subquestion: |
   * ${currency(maintenance_arrears_amount)} in previously ordered past due support (arrears).
   * When added together, the missed payments and the past due support total ${currency(maintenance_total_amount)}.
   % else:
-  Here's how we figured out this total: ${nice_number(maintenance_missed_payment_count,use_word=False)} missed payments of ${currency(maintenance_amount)} comes to ${currency(missed_maintenance)}.
+  Here's how we figured out this total: ${nice_number(maintenance_missed_payment_count,use_word=False)} missed payments of ${currency(maintenance_amount)} come to ${currency(missed_maintenance)}.
   % endif
   
   If this is correct, click **Next**. If this is incorrect, you can click [**Your petition**](${url_action('section_petition')}) to change your earlier answers.
@@ -811,9 +802,9 @@ id: order paragraph
 question: |
   What does the order or judgment say ${other_parties[0].name_full()} is supposed to do?
 subquestion: |
-  Enter the paragraph number of the Order that was violated.
+  Enter the paragraph number of the order that was violated.
 
-  In the first box, enter the paragraph number of the Order that was violated.
+  In the first box, enter the paragraph number of the order that was violated.
 
   In the second box, enter the words from that paragraph that explain what ${other_parties[0].name_full()} was supposed to do. For example, if the paragraph says, "Petitioner shall put the marital property up for sale by October 1, 2025," you should enter "Put the marital property up for sale by October 1, 2025." The paragraph may or may not have ${other_parties[0].name_full()}'s name or role.
 fields:
@@ -898,7 +889,7 @@ question: |
 subquestion: |
   Enter the date, time, and courtroom information for your court date.
 
-  If you do not know this yet, you can leave these fields blank. You must add this information to the petition before you deliver it to ${other_parties[0].name_full()}.
+  If you do not know this yet, you can leave these fields blank. You must add this information to the *Notice of Court Date for Motion* before you deliver it to ${other_parties[0].name_full()}.
 fields:
   - Date: hearing_date
     datatype: date
@@ -970,7 +961,7 @@ content: |
   * US mail or a delivery company (like UPS or FedEx), or
   * Hand delivery to the party, the party's family member over 13 at their residence, the party's lawyer, or their lawyer's office.
 
-  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand-delivery.
+  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand delivery.
   
   If you are in a prison or jail, you can deliver by mail.
 terms:
@@ -986,7 +977,7 @@ generic object: ALIndividual
 question: |
   How will you send your forms to ${ x.name_full() }?
 subquestion: |
-  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand-delivery.
+  You must send your forms electronically (by email or through the e-filing system) if you and the person you are sending forms to have an email address. If you or the person you are sending to do not have an email address, or if you have permission from the judge, you may send forms by mail, through a delivery company, or by hand delivery.
 
   For best results, complete the Proof of Delivery section and send the forms today.
 
@@ -1010,7 +1001,7 @@ fields:
     js show if: 
       val("x.efm_delivery") == true
     required: False
-  - "US mail, a delivery company (like UPS or FedEX), or in-person by hand-delivery": x.physical_delivery
+  - "US mail, a delivery company (like UPS or FedEx), or in-person by hand delivery": x.physical_delivery
     datatype: yesnowide
   - note: |
       Where will you deliver the paper forms to?
@@ -1113,7 +1104,6 @@ subject: |
 content: |  
   If you need help delivering by email or using the e-filing system, you can visit a [**Legal Self-Help Center**](https://www.illinoislegalaid.org/get-legal-help/lshc-directory) or you can call, chat, or text a Court Guide at [**Illinois Court Help**](https://www.ilcourthelp.gov) or 833-411-1121.
 ---
----
 id: delivery time
 generic object: ALIndividual
 question: |
@@ -1190,7 +1180,7 @@ subquestion: |
   
   If you do not want to list a phone number on your forms, leave it blank.
 
-  If you have an email address, you must list it. Be sure to check your email daily, otherwise you may miss important information about your case.
+  If you have an email address, you must list it. Be sure to check your email daily, or you may miss important information about your case.
 
   ${ collapse_template(contact_info_help) }  
 fields:  
@@ -1596,21 +1586,6 @@ attachment:
       - "for_self": ${True}
       - "for_self_2": ${True}      
       - "motion_summary": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
-
-      - "hearing_date": ${ "" }
-      - "hearing_time": ${ "" }
-      - "hearing_am_checkbox": ${ ""}
-      - "hearing_pm_checkbox": ${ ""}
-      - "in_person_cb": ${ "" }
-      - "remote_cb": ${  "" }
-      - "remote_url": ${ "" }
-      - "remote_login": ${  ""}
-      - "remote_phone": ${ ""}
-      - "hearing_courtroom": ${ ""}
-      - "courthouse_address": ${""}
-      - "clerk_phone": ${ "" }
-      - "clerk_website": ${ "" }
-        
       - "document_name": ${ "Petition for Rule to Show Cause and for Finding of Indirect Civil Contempt"}
       - "delivery_party1_name_full": | 
           ${ other_parties[0].name_full() }
