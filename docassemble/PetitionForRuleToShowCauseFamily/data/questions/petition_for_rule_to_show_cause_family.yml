@@ -87,6 +87,7 @@ code: |
     maintenance_total_amount_note
   else:
     order_paragraphs.gather()
+  contempt_request
   set_progress(60)
   willful_info
 
@@ -869,6 +870,19 @@ subquestion: |
   **Contumacious** means they refused to obey the court.
 
   **Without just cause** means they did not have a good reason to do it.
+---
+id: contempt request
+question: |
+  Do you want the court to find ${other_parties[0].name_full()} in contempt of court?
+subquestion: |
+  If the court finds them in contempt of court, ${other_parties[0].name_full()} will face punishment. The punishment could include jail time.
+
+  If you click **Yes**, the petition will ask the court for "Sanctions to issue, including jail time if there are continued violations, to prevent future violations."
+
+  Even if you click **No**, the court could still find ${other_parties[0].name_full()} in contempt and give them jail time.
+fields:
+  - no label: contempt_request
+    datatype: yesnoradio
 ---
 id: hearing scheduled
 question: |
@@ -1930,6 +1944,10 @@ review:
       * Paragraph ${para.name.text}
       % endfor
     show if: violation_type == "other"
+  - Edit: contempt_request
+    button: |
+      **Do you want the court to find ${other_parties[0].name_full()} in contempt of court?**
+      ${word(yesno(contempt_request))}
 ---
 id: children review screen
 continue button field: children.revisit
@@ -2336,6 +2354,10 @@ review:
       * Paragraph ${para.name.text}
       % endfor
     show if: violation_type == "other"
+  - Edit: contempt_request
+    button: |
+      **Do you want the court to find ${other_parties[0].name_full()} in contempt of court?**
+      ${word(yesno(contempt_request))}
   - note: |
       <h4>Delivery and filing details</h4>
   - Edit: has_court_date
