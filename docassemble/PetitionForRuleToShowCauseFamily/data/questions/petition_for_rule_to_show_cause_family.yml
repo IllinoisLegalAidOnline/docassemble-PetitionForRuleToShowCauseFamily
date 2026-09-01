@@ -873,18 +873,18 @@ subquestion: |
 ---
 id: contempt request
 question: |
-  Do you want ${other_parties[0].name_full()} to face jail time if they do not follow the order?
+  Sanctions
 subquestion: |
-  If the court finds them in contempt of court, ${other_parties[0].name_full()} will face punishment. The punishment could include jail time.
+  If the judge finds that ${other_parties[0].name_full()} violated the court order, the judge may hold them in contempt of court. To make ${other_parties[0].name_full()} follow the court order, the judge may order sanctions on them. Sanctions could include fines, community service, or even jail time. The petition must include a request for sanctions for it to be effective.
 
-  If you click **Yes**, the petition will ask the court for "sanctions to issue, including jail time if there are continued violations, to prevent future violations." If you click **No**, the petition will only ask for "sanctions to issue to prevent future violations." 
-  
-  **Note:** Even if you click **No**, the court could still decide to give ${other_parties[0].name_full()} jail time if it finds them in contempt of court.
-  
-  If you do not want ${other_parties[0].name_full()} to go to jail, you may want to file a *Motion to Enforce* instead of a petition. A *Motion to Enforce* would ask the court to remind ${other_parties[0].name_full()} to follow the order without punishing them. To learn more about filing a *Motion to Enforce* for a divorce or other family law case, read ILAO's [**Enforcing a divorce order FAQ**](https://www.illinoislegalaid.org/legal-information/enforcing-court-order-divorce-0#whatisamotiontoenforce).
+  **Note:** If you do not want ${other_parties[0].name_full()} to face possible jail time, you may want to file a *Motion to Enforce* instead of a petition. A *Motion to Enforce* asks the court to remind ${other_parties[0].name_full()} to follow the order without punishing them. To learn more about filing a *Motion to Enforce* for a divorce or other family law case, read ILAO's [**Enforcing a divorce order FAQ**](https://www.illinoislegalaid.org/legal-information/enforcing-court-order-divorce-0#whatisamotiontoenforce).
 fields:
-  - no label: contempt_request
+  - note: |
+      The petition will include a request for sanctions to issue to prevent future violations.
+  - "**Do you want the petition to also include the possibility of jail time for ${other_parties[0].name_full()} if they do not follow the order?**": contempt_request
     datatype: yesnoradio
+  - note: |
+     **Note:** Even if you click **No**, the court could still decide to give ${other_parties[0].name_full()} jail time if it finds them in contempt of court. If this is not what you want, consider filing a *Motion to Enforce* instead.
 ---
 id: hearing scheduled
 question: |
