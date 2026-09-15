@@ -87,6 +87,7 @@ code: |
     maintenance_total_amount_note
   else:
     order_paragraphs.gather()
+  contempt_request
   set_progress(60)
   willful_info
 
@@ -245,7 +246,10 @@ subquestion: |
 
   * You can go into **{mediation}**. If you are in Cook County, you may be able to go to the [**Center for Conflict Resolution**](https://www.ccrchicago.org/).
   * If you need help collecting child support, you can ask the [**Illinois Department of Healthcare and Family Services**](https://hfs.illinois.gov/childsupport/parents/apply.html) for help.
+  * You can file a *Motion to Enforce*, which asks the court to remind the other party to follow the order without punishing them. To learn more about filing a *Motion to Enforce* for a divorce or other family law case, read ILAO's [**Enforcing a divorce order FAQ**](https://www.illinoislegalaid.org/legal-information/enforcing-court-order-divorce-0#whatisamotiontoenforce).
   * You can file a *Petition for Rule to Show Cause* when the other party in a case is not following a court order. The petition will ask the court to enforce its order by finding the other party in **{contempt of court}**. You will need to include a copy of the original court order. You can only use this petition if the other party did not follow the order on purpose and did not have a good reason to do so.
+
+  If you file a *Petition for Rule to Show Cause* and the other party does not start following the order, the court may punish them with fines, community service, or even jail time. If you do not want the other party to face possible jail time, you should not use this program.
 
   You may want to wait at least 30 days after the date of the court order before filing a petition. This will make it easier to enforce the court order.
   
@@ -869,6 +873,21 @@ subquestion: |
   **Contumacious** means they refused to obey the court.
 
   **Without just cause** means they did not have a good reason to do it.
+---
+id: contempt request
+question: |
+  Sanctions
+subquestion: |
+  If the judge finds that ${other_parties[0].name_full()} violated the court order, the judge may hold them in contempt of court. To make ${other_parties[0].name_full()} follow the court order, the judge may order sanctions on them. Sanctions could include fines, community service, or even jail time. The petition must include a request for sanctions for it to be effective.
+
+  **Note:** If you do not want ${other_parties[0].name_full()} to face possible jail time, you may want to file a *Motion to Enforce* instead of a petition. A *Motion to Enforce* asks the court to remind ${other_parties[0].name_full()} to follow the order without punishing them. To learn more about filing a *Motion to Enforce* for a divorce or other family law case, read ILAO's [**Enforcing a divorce order FAQ**](https://www.illinoislegalaid.org/legal-information/enforcing-court-order-divorce-0#whatisamotiontoenforce).
+fields:
+  - note: |
+      The petition will include a request for sanctions to issue to prevent future violations.
+  - "**Do you want the petition to also include the possibility of jail time for ${other_parties[0].name_full()} if they do not follow the order?**": contempt_request
+    datatype: yesnoradio
+  - note: |
+     **Note:** Even if you click **No**, the court could still decide to give ${other_parties[0].name_full()} jail time if it finds them in contempt of court. If this is not what you want, consider filing a *Motion to Enforce* instead.
 ---
 id: hearing scheduled
 question: |
@@ -1930,6 +1949,10 @@ review:
       * Paragraph ${para.name.text}
       % endfor
     show if: violation_type == "other"
+  - Edit: contempt_request
+    button: |
+      **Do you want ${other_parties[0].name_full()} to face jail time if they do not follow the order?**
+      ${word(yesno(contempt_request))}
 ---
 id: children review screen
 continue button field: children.revisit
@@ -2336,6 +2359,10 @@ review:
       * Paragraph ${para.name.text}
       % endfor
     show if: violation_type == "other"
+  - Edit: contempt_request
+    button: |
+      **Do you want ${other_parties[0].name_full()} to face jail time if they do not follow the order?**
+      ${word(yesno(contempt_request))}
   - note: |
       <h4>Delivery and filing details</h4>
   - Edit: has_court_date
