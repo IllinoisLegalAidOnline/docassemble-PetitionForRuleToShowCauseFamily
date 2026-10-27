@@ -93,6 +93,7 @@ code: |
     order_paragraphs.gather()
   contempt_request
   set_progress(60)
+  comply_attempt
   willful_info
 
   nav.set_section('section_delivery')
@@ -894,6 +895,21 @@ subquestion: |
   % endfor
 fields:
   - no label: order_paragraphs.there_is_another
+    datatype: yesnoradio
+---
+id: comply attempt
+question: |
+  % if violation_type == "child" or violation_type == "maintain":
+  Have you asked ${other_parties[0].name_full()} to pay what they owe you?
+  % else:
+  Have you asked ${other_parties[0].name_full()} to follow the order?
+  % endif
+subquestion: |
+  If you click **Yes**, your petition will mention that you asked them.
+
+  You can still file a petition even if you have not asked them.
+fields:
+  - no label: comply_attempt
     datatype: yesnoradio
 ---
 id: willful info
@@ -2030,6 +2046,14 @@ review:
     button: |
       **Do you want ${other_parties[0].name_full()} to face jail time if they do not follow the order?**
       ${word(yesno(contempt_request))}
+  - Edit: comply_attempt
+    button: |
+      % if violation_type == "child" or violation_type == "maintain":
+      **Have you asked ${other_parties[0].name_full()} to pay what they owe you?**
+      % else:
+      **Have you asked ${other_parties[0].name_full()} to follow the order?**
+      % endif
+      ${word(yesno(comply_attempt))}
 ---
 id: children review screen
 continue button field: children.revisit
@@ -2478,6 +2502,14 @@ review:
     button: |
       **Do you want ${other_parties[0].name_full()} to face jail time if they do not follow the order?**
       ${word(yesno(contempt_request))}
+  - Edit: comply_attempt
+    button: |
+      % if violation_type == "child" or violation_type == "maintain":
+      **Have you asked ${other_parties[0].name_full()} to pay what they owe you?**
+      % else:
+      **Have you asked ${other_parties[0].name_full()} to follow the order?**
+      % endif
+      ${word(yesno(comply_attempt))}
   - note: |
       <h4>Delivery and filing details</h4>
   - Edit: has_court_date
