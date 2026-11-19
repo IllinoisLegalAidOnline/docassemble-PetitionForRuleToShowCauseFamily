@@ -368,6 +368,17 @@ content: |
 
   The other court forms in the case should help you figure it out. Look at the top (the caption) of the forms. They should have a label by your name.
 ---
+code: |
+  def original_plaintiff_petitioner():
+    if party_label == "plaintiff":
+      return "Plaintiff " + users[0].name_full()
+    elif party_label == "petitioner":
+      return "Petitioner " + users[0].name_full()
+    elif party_label == "defendant":
+      return "Plaintiff " + other_parties[0].name_full()
+    else:
+      return "Petitioner " + other_parties[0].name_full()
+---
 id: county
 continue button field: county
 question: |
